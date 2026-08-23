@@ -1,0 +1,11 @@
+You are working in Eldrin UI, a React + TypeScript + Tailwind CSS v4 component
+library built from scratch (no ShadCN).
+
+Every design token carries intent metadata (purpose, what it's not for,
+accessibility requirements) — see `src/tokens/`.
+
+Every component is defined by a machine-readable blueprint before
+implementation: `src/components/<Name>/<NAME>.md`. Read the blueprint before
+writing or modifying a component, and keep it in sync with the code.
+
+See CLAUDE.md and DESIGN.md for full project context.

@@ -1,0 +1,204 @@
+# eldrin-ui/docs/glossary.yaml
+#
+# Single source of truth for naming DECISIONS across the whole system —
+# not a taxonomy tool. Just: for a given concept, which exact word
+# did we commit to, and why. Reference this before introducing a new
+# term for something that might already have one.
+#
+# status: decided | needs-decision
+#   needs-decision entries are flagged, not guessed — do not pick one
+#   silently in code or docs. Surface it and update this file first.
+#
+# supersedes: if set, this term replaces an earlier one used in prior
+# examples/drafts. Old term should not appear in new code.
+#
+# forbidden: optional list of additional disallowed strings for this
+# entry (alternate spellings, rejected synonyms) beyond `supersedes`.
+# scripts/lint-glossary.mjs scans for both `supersedes` and `forbidden`
+# on `decided` entries — kept as explicit fields rather than parsed
+# out of `decision`/`rationale` prose, so the linter's behavior doesn't
+# depend on how a sentence happens to be phrased.
+#
+# This file is enforced by `npm run lint:glossary` — see
+# docs/decisions/0002-glossary-governance.md.
+
+version: 1
+
+entries:
+
+  # ---- Components ----
+
+  - term: PascalCase, no prefix
+    category: component-naming
+    decision: >
+      Components are named in PascalCase with no system prefix —
+      `Button`, `Card`, not `EldrinButton`. Named after function, not
+      appearance.
+    rationale: >
+      Prefixing every component adds noise without disambiguating
+      anything inside your own package; consistent with how Figma's own
+      convention treats public components (no namespace prefix).
+    status: decided
+
+  - term: single component + variant prop
+    category: component-naming
+    decision: >
+      One component per concept with an enum `variant` prop
+      (`<Button variant="primary" />`), not separate components per
+      visual variant (`ButtonPrimary`, `ButtonSecondary`).
+    rationale: >
+      Avoids combinatorial explosion across variant × size × state.
+      Matches Material UI's API convention.
+    status: decided
+
+  # ---- Token structure ----
+
+  - term: token layer order
+    category: token-structure
+    decision: "primitive -> semantic -> component (3 layers, in that order)."
+    rationale: >
+      Primitives are raw values (owned separately). Semantic tokens are
+      the vocabulary (bg/text/border/icon x role x state). Component
+      tokens are pure aliases into the semantic layer, resolved by the
+      component's container/control classification.
+    status: decided
+
+  - term: semantic token naming formula
+    category: token-structure
+    decision: >
+      `{element}.{family}.{concept}.{state}.{context}` (dot notation) is
+      the canonical semantic token KEY — e.g. how a token is defined/
+      referenced in the token source (`src/tokens/`). The Tailwind
+      utility class derived from a key replaces each `.` with `-`
+      (`bg.fill.primary.hover` -> `bg-fill-primary-hover`). Dot form and
+      hyphenated form are the same token, not competing notations —
+      ADR 0001's `bg-surface-*` / `bg-fill-*` / `text-onFill-*` examples
+      are the derived class form of this key.
+    rationale: >
+      element = bg/text/border/icon. family = surface/fill (structural
+      role). concept = the meaning (see color-role entries below). state
+      = interaction state. context = on-bg-fill/inverse/transparent.
+      Fixed order, broad to specific. Without stating the dot->hyphen
+      derivation explicitly, the two notations read as two different
+      naming schemes instead of one token shown two ways.
+    status: decided
+
+  - term: surface / fill
+    category: token-structure
+    decision: >
+      `surface` = background for container components (accepts child
+      content). `fill` = background for atomic control components.
+      Structural role, kept as its own axis, separate from `concept`.
+    rationale: >
+      Container -> bg.surface.*, control -> bg.fill.*, resolved from the
+      component's own classification (frontmatter in its COMPONENT.md —
+      see the "container / control" entry below). Kept the Polaris/Astryx
+      term here since it names a structural role, not a brand-flavored
+      concept (unlike brand/primary below, which was in scope for
+      renaming).
+    status: decided
+
+  # ---- Color role keywords (the "concept" segment) ----
+
+  - term: primary
+    category: color-role
+    decision: >
+      Use `primary` for the main accent/CTA color role
+      (`color.bg.fill.primary`, `color.text.primary`, etc).
+    supersedes: brand
+    rationale: >
+      More familiar to React developers (Material UI convention). Reads
+      as a UI role ("the main action") rather than asserting it's
+      necessarily the brand color.
+    status: decided
+
+  - term: destructive
+    category: color-role
+    decision: >
+      Use `destructive` as the single keyword covering both dangerous
+      actions (delete buttons) AND error/failure states — do not use
+      `critical` anywhere in new code or docs.
+    supersedes: critical
+    rationale: >
+      Matches the vocabulary already in use in the naming research
+      (Airtable base). One term, not two synonyms for the same concept.
+    status: decided
+
+  - term: caution
+    category: color-role
+    decision: >
+      Use `caution` for a mild, reversible heads-up state — lower
+      severity than `warning`, higher than plain `info`. Same token
+      shape as info/success/destructive (`bg.fill.caution.*`,
+      `text.caution.*`, etc — see the semantic token naming formula
+      entry above).
+    rationale: >
+      Resolves the earlier caution-vs-warning ambiguity by keeping
+      both terms as two rungs of one severity axis instead of picking
+      a single winner: `info` < `caution` < `warning` < `destructive`.
+      (`success` sits outside this axis — it signals a positive
+      outcome, not a severity level, so it isn't ordered against
+      these.) Matches how Polaris itself uses both terms; the earlier
+      inconsistency was the lack of a fixed relationship between them,
+      not the presence of two terms.
+    status: decided
+
+  - term: warning
+    category: color-role
+    decision: >
+      Use `warning` for an elevated, needs-attention-soon state — more
+      serious than `caution`, not yet blocking/destructive. Same token
+      shape as info/success/destructive (`bg.fill.warning.*`,
+      `text.warning.*`, etc).
+    rationale: >
+      One rung up from `caution` on the same severity axis — see the
+      `caution` entry above for the full ordering and reasoning.
+    status: decided
+
+  - term: info
+    category: color-role
+    decision: "Use `info` for informational/neutral-attention states."
+    rationale: "No conflict found; used consistently so far."
+    status: decided
+
+  - term: success
+    category: color-role
+    decision: "Use `success` for positive/completed states."
+    rationale: "No conflict found; used consistently so far."
+    status: decided
+
+  # ---- Component classification ----
+
+  - term: container / control
+    category: structural-classification
+    decision: >
+      `container` = accepts arbitrary child content (Card, Modal,
+      Popover). `control` = atomic, self-contained element (Button,
+      Badge). Recorded per-component in that component's own
+      `<NAME>.md` blueprint (`classification` + `rationale`
+      frontmatter) — no separate classification.yaml.
+    rationale: "Determines which token family (surface/fill) a component uses."
+    status: decided
+
+  # ---- Interaction state vocabulary ----
+
+  - term: state vocabulary
+    category: state
+    decision: "hover, active, selected, disabled, focus — no synonyms (never 'pressed' for active, never 'checked' for selected outside form-control-specific contexts)."
+    forbidden: [pressed, checked]
+    rationale: >
+      Fixed list, consistent everywhere a state suffix is used, so state
+      tokens are always inherited/derived from the same vocabulary.
+    status: decided
+
+  # ---- Abbreviations ----
+
+  - term: bg
+    category: abbreviation
+    decision: "`bg` always means `background`. Never write `background` in full inside a token name."
+    forbidden: [background]
+    rationale: >
+      If you abbreviate, the abbreviation must be fixed and exclusive —
+      otherwise `bg` and `background` become two different tokens for
+      the same concept.
+    status: decided
