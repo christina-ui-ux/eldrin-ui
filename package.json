@@ -1,8 +1,13 @@
 {
-  "name": "eldrin-ui",
+  "name": "eldrin-ui-monorepo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "docs"
+  ],
   "scripts": {
     "lint:glossary": "node scripts/lint-glossary.mjs"
   },

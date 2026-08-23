@@ -18,9 +18,11 @@ it renders.
 
 ## Structure
 
-- `src/tokens/` — design tokens with intent metadata
-- `src/components/<Name>/` — component + its blueprint (`<NAME>.md`) + types
-- `docs/` — Astro docs site (coming soon)
+- npm workspace root (`package.json`, `"workspaces": ["packages/*", "apps/*", "docs"]`)
+- `packages/eldrin-ui/src/tokens/` — design tokens with intent metadata
+- `packages/eldrin-ui/src/components/<Name>/` — component + its blueprint (`<NAME>.md`) + types
+- `apps/playground/` — Vite app for prototyping against the library (workspace-linked to `packages/eldrin-ui`, never published)
+- `docs/` — Astro docs site, workspace member
 
 ## Conventions
 

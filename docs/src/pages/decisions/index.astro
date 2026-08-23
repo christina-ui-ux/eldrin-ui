@@ -1,0 +1,22 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getCollection } from 'astro:content';
+import { withBase } from '../../lib/base';
+
+const decisions = (await getCollection('decisions')).sort((a, b) => b.data.id - a.data.id);
+---
+
+<MainLayout title="Architecture decisions" description="ADRs for Eldrin UI.">
+	<ul>
+		{
+			decisions.map((decision) => (
+				<li>
+					<a href={withBase(`/decisions/${decision.data.id}/`)}>
+						{String(decision.data.id).padStart(4, '0')} — {decision.data.title}
+					</a>{' '}
+					({decision.data.status})
+				</li>
+			))
+		}
+	</ul>
+</MainLayout>

@@ -1,5 +1,5 @@
 import type { InputProps } from './Input.types';
 
-export function Input(props: InputProps) {
+export function Input(_props: InputProps) {
   return null;
 }

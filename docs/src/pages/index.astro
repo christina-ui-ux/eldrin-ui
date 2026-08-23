@@ -1,0 +1,57 @@
+---
+import '../styles/main.css';
+import { SITE } from '../config';
+import { withBase } from '../lib/base';
+
+const navItems = [
+	{
+		title: 'Core',
+		description: 'What Eldrin UI is and how the docs are organized.',
+		url: '/core/introduction/',
+	},
+	{
+		title: 'Components',
+		description: 'Machine-readable blueprints for each component.',
+		url: '/components/',
+	},
+	{
+		title: 'Architecture decisions',
+		description: 'Structural decisions and the rules they set.',
+		url: '/decisions/',
+	},
+];
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={SITE.description} />
+		<title>{SITE.title}</title>
+	</head>
+	<body class="min-h-screen bg-slate-50 text-center">
+		<header class="bg-gradient-to-br from-slate-800 to-slate-950 px-4 pt-16 pb-24">
+			<h1 class="text-4xl font-semibold text-white drop-shadow-sm">{SITE.title}</h1>
+			<p class="mx-auto mt-4 max-w-xl text-lg text-slate-300">{SITE.description}</p>
+		</header>
+		<nav class="px-4">
+			<ul class="mx-auto -mt-12 flex max-w-4xl flex-col gap-4 text-left sm:flex-row">
+				{
+					navItems.map(({ title, description, url }) => (
+						<li class="flex-1">
+							<a
+								href={withBase(url)}
+								class="block h-full rounded-md bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+							>
+								<h2 class="text-lg font-medium text-slate-900">{title}</h2>
+								<p class="mt-1 text-slate-500">{description}</p>
+							</a>
+						</li>
+					))
+				}
+			</ul>
+		</nav>
+	</body>
+</html>

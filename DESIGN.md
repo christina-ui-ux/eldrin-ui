@@ -9,7 +9,7 @@ context needed to keep design and code in sync for Eldrin UI.
 
 ## Tokens
 
-Tokens live in `src/tokens/` and are the source of truth. Each token carries
+Tokens live in `packages/eldrin-ui/src/tokens/` and are the source of truth. Each token carries
 intent metadata:
 
 - **purpose** — what the token is for
@@ -18,7 +18,7 @@ intent metadata:
 
 ## Components
 
-Each component under `src/components/<Name>/` has a blueprint
+Each component under `packages/eldrin-ui/src/components/<Name>/` has a blueprint
 (`<NAME>.md`) describing its anatomy, states, and token usage — intended to
 stay in sync with the corresponding Figma component.
 

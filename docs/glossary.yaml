@@ -68,7 +68,7 @@ entries:
     decision: >
       `{element}.{family}.{concept}.{state}.{context}` (dot notation) is
       the canonical semantic token KEY — e.g. how a token is defined/
-      referenced in the token source (`src/tokens/`). The Tailwind
+      referenced in the token source (`packages/eldrin-ui/src/tokens/`). The Tailwind
       utility class derived from a key replaces each `.` with `-`
       (`bg.fill.primary.hover` -> `bg-fill-primary-hover`). Dot form and
       hyphenated form are the same token, not competing notations —

@@ -1,0 +1,30 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { withBase } from '../../lib/base';
+
+export async function getStaticPaths() {
+	const decisions = await getCollection('decisions');
+	return decisions.map((decision) => ({
+		params: { id: String(decision.data.id) },
+		props: { decision },
+	}));
+}
+
+const { decision } = Astro.props;
+const { Content, headings } = await render(decision);
+---
+
+<MainLayout title={decision.data.title} headings={headings}>
+	<p>
+		<strong>{String(decision.data.id).padStart(4, '0')}</strong> ·
+		{decision.data.status}
+		{decision.data.superseded_by && (
+			<> · superseded by {String(decision.data.superseded_by).padStart(4, '0')}</>
+		)}
+	</p>
+	<Content />
+	<p>
+		<a href={withBase('/decisions/')}>&larr; All decisions</a>
+	</p>
+</MainLayout>

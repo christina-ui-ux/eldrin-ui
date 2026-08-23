@@ -30,8 +30,9 @@ Eldrin UI is being built in the open, one component at a time.
 - Core token system with intent metadata
 - First components: Foundation, Button, Input, Badge, Card
 - Component blueprints for each
+- Astro docs site and a workspace-linked playground app, both scaffolded — content is still thin
 **Next**
-- Astro docs site with live component playground
+- Real component implementations, rendered live in the docs site and prototyped in the playground
 - Figma library with Token Studio sync
 - Figma MCP integration for automated drift detection between design and code
 **Later**
@@ -56,6 +57,7 @@ Clone the repo and start Claude Code in the project root.
 ```bash
 git clone https://github.com/DEIN-USERNAME/eldrin-ui.git
 cd eldrin-ui
+npm install
 claude
 ```
  
@@ -67,16 +69,21 @@ For Cursor, `.cursorrules` is included in the root.
  
 ```
 eldrin-ui/
-├── CLAUDE.md              # AI context for Claude Code & Cursor
-├── DESIGN.md              # AI context for designers & Figma
-├── src/
-│   ├── tokens/            # Design tokens with intent metadata
-│   └── components/        # Components + blueprints
-│       └── Button/
-│           ├── BUTTON.md  # Component blueprint
-│           ├── Button.tsx
-│           └── Button.types.ts
-└── docs/                  # Astro docs site (coming soon)
+├── CLAUDE.md                    # AI context for Claude Code & Cursor
+├── DESIGN.md                    # AI context for designers & Figma
+├── package.json                 # npm workspace root (private)
+├── packages/
+│   └── eldrin-ui/                # the published component library
+│       └── src/
+│           ├── tokens/            # Design tokens with intent metadata
+│           └── components/        # Components + blueprints
+│               └── Button/
+│                   ├── BUTTON.md  # Component blueprint
+│                   ├── Button.tsx
+│                   └── Button.types.ts
+├── apps/
+│   └── playground/                # prototyping app, workspace-linked to eldrin-ui
+└── docs/                        # Astro docs site, workspace member
 ```
  
 ---

@@ -1,0 +1,54 @@
+---
+import '../styles/main.css';
+import Header from '../components/Header.astro';
+import LeftSidebar from '../components/LeftSidebar.astro';
+import RightSidebar from '../components/RightSidebar.astro';
+import { SITE } from '../config';
+import { withBase } from '../lib/base';
+
+interface Heading {
+	slug: string;
+	text: string;
+	depth: number;
+}
+
+interface Props {
+	title?: string;
+	description?: string;
+	headings?: Heading[];
+	// Astro's legacy `layout:` frontmatter (used by plain .md pages under
+	// src/pages/) passes the rest of the frontmatter as `frontmatter`
+	// instead of spreading `title`/`description` directly.
+	frontmatter?: { title?: string; description?: string };
+}
+
+const props = Astro.props as Props;
+const title = props.title ?? props.frontmatter?.title ?? SITE.title;
+const description = props.description ?? props.frontmatter?.description ?? SITE.description;
+const headings = props.headings ?? [];
+const currentPage = Astro.url.pathname;
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<title>{title} — {SITE.title}</title>
+	</head>
+	<body class="bg-white text-slate-800">
+		<Header />
+		<div class="mx-auto flex max-w-7xl">
+			<LeftSidebar currentPage={currentPage} />
+			<main class="min-w-0 flex-1 px-8 py-10">
+				<article class="prose">
+					<h1 class="text-3xl font-semibold text-slate-900">{title}</h1>
+					<slot />
+				</article>
+			</main>
+			<RightSidebar headings={headings} />
+		</div>
+	</body>
+</html>

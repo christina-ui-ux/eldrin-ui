@@ -53,7 +53,7 @@ function walk(dir, out) {
 
 function defaultTargets() {
   const files = [];
-  walk(join(ROOT, 'src'), files);
+  walk(join(ROOT, 'packages'), files);
   walk(join(ROOT, 'docs'), files);
   for (const f of ['README.md', 'CLAUDE.md', 'DESIGN.md']) {
     const full = join(ROOT, f);
