@@ -4,8 +4,11 @@
 ![license](https://img.shields.io/github/license/christina-ui-ux/eldrin-ui)
 ![built with](https://img.shields.io/badge/built%20with-React%20%2B%20TypeScript%20%2B%20Tailwind-blue)
 ![AI ready](https://img.shields.io/badge/AI--ready-Claude%20Code%20%26%20Cursor-violet)
+[![docs](https://img.shields.io/badge/docs-christina--ui--ux.github.io%2Feldrin--ui-blue)](https://christina-ui-ux.github.io/eldrin-ui/)
  
 Open-source React component library with structured design token intent and component blueprints. Designed for Claude Code and Cursor. Built for humans and AI agents alike.
+ 
+📖 **[Read the docs](https://christina-ui-ux.github.io/eldrin-ui/)**
  
 > **Early-stage experiment.** Things will change. Feedback is very welcome.
  
