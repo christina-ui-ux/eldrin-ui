@@ -28,6 +28,13 @@ jobs:
         with:
           path: docs
           node-version: 22
+          # docs/ is an npm workspace member (see ADR 0004) and has no
+          # lockfile of its own — the root package-lock.json covers it.
+          # withastro/action's package-manager auto-detection only looks
+          # for a lockfile inside `path`, so it fails without this; `npm
+          # install`/`npm run build` run with cwd=docs still correctly
+          # resolve to the workspace root regardless.
+          package-manager: npm
 
   deploy:
     needs: build

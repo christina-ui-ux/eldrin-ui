@@ -76,9 +76,15 @@ coupling to untangle.
 
 ## Consequences
 
-- `.github/workflows/deploy-docs.yml` needs no change: its `path: docs`
-  input to `withastro/action` already scopes install/build to `docs/`
-  internally, and its `paths: ['docs/**', ...]` trigger filter still means
+- `.github/workflows/deploy-docs.yml` needed one change:
+  `withastro/action`'s package-manager auto-detection only looks for a
+  lockfile inside its `path: docs` input, and `docs/` no longer has its
+  own (the root `package-lock.json` covers it) — this broke the first
+  deploy after this restructure landed, fixed by passing
+  `package-manager: npm` explicitly to skip that detection. `npm
+  install`/`npm run build` themselves still work correctly with
+  `working-directory: docs`, since npm's workspace resolution walks up to
+  the root regardless of cwd. Its `paths: ['docs/**', ...]` trigger filter still means
   library-only changes under `packages/eldrin-ui/**` don't trigger a Pages
   deploy.
 - Local setup is now `npm install` once at repo root, not a separate
