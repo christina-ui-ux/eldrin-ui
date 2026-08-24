@@ -13,4 +13,7 @@ export const SIDEBAR = [
 
 	{ text: 'Components', header: true },
 	{ text: 'Overview', link: '/components/' },
+
+	{ text: 'Tokens', header: true },
+	{ text: 'Colors', link: '/tokens/colors/' },
 ];

@@ -6,10 +6,12 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens/generated.css"
   },
   "scripts": {
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "tokens:build": "node scripts/build-tokens.mjs"
   },
   "devDependencies": {
     "oxlint": "^1.75.0"

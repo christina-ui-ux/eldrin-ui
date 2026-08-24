@@ -1,0 +1,151 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { withBase } from '../../lib/base';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+// Reads the real generated CSS rather than duplicating color values by
+// hand, so this page can't drift from what actually ships. Regenerate
+// with `npm run tokens:build` in packages/eldrin-ui, then reload.
+const GENERATED_CSS_PATH = fileURLToPath(
+	new URL('../../../../packages/eldrin-ui/src/tokens/generated.css', import.meta.url)
+);
+const css = readFileSync(GENERATED_CSS_PATH, 'utf8');
+
+interface VarEntry {
+	name: string;
+	value: string;
+}
+
+function extractBlocks(source: string): { selector: string; body: string }[] {
+	const blocks: { selector: string; body: string }[] = [];
+	const blockRegex = /(@theme|\[data-[\w-]+="[\w-]+"\])\s*\{([^}]*)\}/g;
+	let match: RegExpExecArray | null;
+	while ((match = blockRegex.exec(source))) {
+		blocks.push({ selector: match[1], body: match[2] });
+	}
+	return blocks;
+}
+
+function extractVars(body: string): Map<string, string> {
+	const vars = new Map<string, string>();
+	const varRegex = /--([\w-]+):\s*([^;]+);/g;
+	let match: RegExpExecArray | null;
+	while ((match = varRegex.exec(body))) {
+		vars.set(`--${match[1]}`, match[2].trim());
+	}
+	return vars;
+}
+
+const blocks = extractBlocks(css);
+const themeBlock = blocks.find((b) => b.selector === '@theme');
+const themeVars = themeBlock ? extractVars(themeBlock.body) : new Map<string, string>();
+
+const overrideBlocks = blocks
+	.filter((b) => b.selector !== '@theme')
+	.map((b) => ({ selector: b.selector, vars: extractVars(b.body) }));
+
+const darkOverride = overrideBlocks.find((b) => b.selector === '[data-primitives="dark"]');
+
+const primitives: (VarEntry & { dark?: string })[] = [];
+const semantics: VarEntry[] = [];
+const components: VarEntry[] = [];
+
+for (const [name, value] of themeVars) {
+	if (name.startsWith('--color-')) {
+		primitives.push({ name, value, dark: darkOverride?.vars.get(name) });
+	} else if (/^var\(--color-/.test(value)) {
+		semantics.push({ name, value });
+	} else if (/^var\(--/.test(value)) {
+		components.push({ name, value });
+	}
+}
+
+// generated.css also defines --spacing-* (deliberately, so Tailwind's
+// own utilities pick it up in a real consumer app — see ADR 0008).
+// This site's own layout uses Tailwind's default spacing scale, so we
+// can't `@import` that file wholesale here without clobbering it
+// sitewide. Instead, declare only the color-related custom properties
+// this page actually needs, scoped to this page's own stylesheet —
+// values copied verbatim from the parsed file, so swatches still
+// render via a real `var()`, not a value baked into the style attribute.
+const colorDeclarations = [...primitives, ...semantics, ...components].map((t) => `  ${t.name}: ${t.value};`);
+const darkDeclarations = primitives.filter((t) => t.dark && t.dark !== t.value).map((t) => `  ${t.name}: ${t.dark};`);
+const colorCss = [
+	':root {',
+	...colorDeclarations,
+	'}',
+	...(darkDeclarations.length ? ['[data-primitives="dark"] {', ...darkDeclarations, '}'] : []),
+].join('\n');
+---
+
+<MainLayout
+	title="Colors"
+	description="Color tokens generated from the real Figma export — primitives, semantics, and components."
+>
+	<style is:global set:html={colorCss} />
+
+	<p>
+		Generated from <code>packages/eldrin-ui/src/tokens/generated.css</code>, which is itself
+		built from the raw Figma exports in <code>packages/eldrin-ui/tokens-source/</code> (see{' '}
+		<a href={withBase('/decisions/8/')}>ADR 0008</a>). This page reads that file directly — it can't drift
+		from what actually ships, but it also won't reflect a new export until you run{' '}
+		<code>npm run tokens:build</code> in <code>packages/eldrin-ui</code>.
+	</p>
+
+	<h2>Primitives</h2>
+	<p>The raw color palette. <code>primitives</code> defaults to its <code>light</code> mode; <code>dark</code> is shown alongside where the export defines an override.</p>
+	<div class="grid grid-cols-2 gap-4 not-prose sm:grid-cols-3 lg:grid-cols-4">
+		{
+			primitives.map((token) => (
+				<div class="overflow-hidden rounded-lg border border-slate-200">
+					<div class="flex h-16">
+						<div class="flex-1" style={`background:var(${token.name})`} />
+						{token.dark && token.dark !== token.value && (
+							<div class="flex-1" data-primitives="dark" style={`background:var(${token.name})`} />
+						)}
+					</div>
+					<div class="p-2 text-xs">
+						<div class="font-mono font-medium text-slate-800">{token.name}</div>
+						<div class="text-slate-500">
+							{token.value}
+							{token.dark && token.dark !== token.value && <> / {token.dark}</>}
+						</div>
+					</div>
+				</div>
+			))
+		}
+	</div>
+
+	<h2>Semantic</h2>
+	<p>Aliases into the primitive layer, named by role rather than palette (see the glossary's "semantic token naming formula").</p>
+	<div class="grid grid-cols-2 gap-4 not-prose sm:grid-cols-3 lg:grid-cols-4">
+		{
+			semantics.map((token) => (
+				<div class="overflow-hidden rounded-lg border border-slate-200">
+					<div class="h-16" style={`background:var(${token.name})`} />
+					<div class="p-2 text-xs">
+						<div class="font-mono font-medium text-slate-800">{token.name}</div>
+						<div class="font-mono text-slate-500">{token.value}</div>
+					</div>
+				</div>
+			))
+		}
+	</div>
+
+	<h2>Component</h2>
+	<p>Pure aliases into the semantic layer, scoped to one component's own token names.</p>
+	<div class="grid grid-cols-2 gap-4 not-prose sm:grid-cols-3 lg:grid-cols-4">
+		{
+			components.map((token) => (
+				<div class="overflow-hidden rounded-lg border border-slate-200">
+					<div class="h-16" style={`background:var(${token.name})`} />
+					<div class="p-2 text-xs">
+						<div class="font-mono font-medium text-slate-800">{token.name}</div>
+						<div class="font-mono text-slate-500">{token.value}</div>
+					</div>
+				</div>
+			))
+		}
+	</div>
+</MainLayout>

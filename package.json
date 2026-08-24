@@ -9,7 +9,8 @@
     "docs"
   ],
   "scripts": {
-    "lint:glossary": "node scripts/lint-glossary.mjs"
+    "lint:glossary": "node scripts/lint-glossary.mjs",
+    "tokens:build": "npm run tokens:build --workspace eldrin-ui"
   },
   "devDependencies": {
     "yaml": "^2.9.0"
