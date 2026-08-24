@@ -125,7 +125,7 @@ what's adapted here, rebuilt on current dependencies.
   dependencies, and CI must `cd docs` (or use `path: docs`) before
   running Astro commands.
 - Component blueprints and the glossary are not yet wired into the site
-  (blueprints are still `TODO`-stubbed prose, not structured
+  (blueprint sections are still unwritten `TODO` prose, not structured
   frontmatter) — the components page marks this "coming soon" rather
   than rendering incomplete content. Wiring them is follow-up work, not
   a gap in this decision.

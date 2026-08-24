@@ -22,10 +22,9 @@ intended to eventually be published as an npm package to consumers outside
 this repo. Publishing a package cleanly wants an unambiguous package
 boundary — "this directory is what ships" — which the flat root layout
 doesn't give. This is also, structurally, the cheapest point at which to
-make this move: every component under `src/` was still a `TODO`-stubbed
-placeholder with no real implementation, and nothing in `docs/src/**`
-imported from root `src/` or vice versa, so there is no cross-project
-coupling to untangle.
+make this move: every component under `src/` had not yet been implemented,
+and nothing in `docs/src/**` imported from root `src/` or vice versa, so
+there is no cross-project coupling to untangle.
 
 ## Decision
 
@@ -68,7 +67,7 @@ coupling to untangle.
   cover "one install, one lockfile, one place to run scoped scripts" with
   no added tooling.
 - **Defer the restructure until closer to actually publishing** — rejected:
-  every component currently is an empty stub and nothing imports across the
+  no component has been implemented yet and nothing imports across the
   `docs/` ↔ library boundary, so this is the lowest-friction point this
   move will ever be at. Waiting only adds more files, more cross-references,
   and (once `docs/` is committed) more git history to carry through the

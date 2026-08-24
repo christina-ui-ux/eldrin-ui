@@ -35,7 +35,7 @@ it needs a real, resolvable module for a consumer to import from.
 - **Per-component subpath exports** (`eldrin-ui/Button`, `eldrin-ui/Input`,
   ...) instead of one barrel — rejected for now: better tree-shaking
   granularity, but adds real ceremony (an `exports` map entry per
-  component) for a library that's still 5 stub components. Revisit if
+  component) for a library that's still only 5 components. Revisit if
   component count and bundle-size pressure both grow enough to justify it.
 - **No defined entry point** (consumers reach directly into
   `packages/eldrin-ui/src/components/<Name>/<Name>.tsx`) — rejected:
@@ -47,8 +47,9 @@ it needs a real, resolvable module for a consumer to import from.
 - `import { Button } from 'eldrin-ui'` resolves for any workspace member.
 - Type-checking a consumer now transitively type-checks
   `packages/eldrin-ui/src/**` under the consumer's own `tsconfig` rules —
-  this already surfaced one real issue (unused `props` params in the
-  still-stubbed components), fixed by prefixing them with `_`.
+  this already surfaced one real issue (unused `props` params in
+  components whose implementation is still pending), fixed by prefixing
+  them with `_`.
 - Adding a new component isn't "done" from a consumption standpoint until
   it's re-exported from `src/index.ts`, in addition to shipping its
   blueprint per the root `CLAUDE.md`'s existing convention.
