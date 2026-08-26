@@ -27,13 +27,15 @@
 // via `com.figma.aliasData`. It fails loudly (rather than guessing) on
 // shapes it doesn't handle yet.
 
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Document, parseDocument } from 'yaml';
 
 const PACKAGE_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SOURCE_DIR = join(PACKAGE_ROOT, 'tokens-source');
 const OUTPUT_PATH = join(PACKAGE_ROOT, 'src', 'tokens', 'generated.css');
+const INTENT_PATH = join(PACKAGE_ROOT, 'src', 'tokens', 'intent.yaml');
 
 // Top-level token group name -> Tailwind @theme namespace it maps to.
 // Extend this when a new top-level group shows up in tokens-source/.
@@ -97,6 +99,7 @@ function walk(node, path, out) {
         type: child.$type,
         value: child.$value,
         aliasData: child.$extensions?.['com.figma.aliasData'] ?? null,
+        variableId: child.$extensions?.['com.figma.variableId'] ?? null,
       });
     } else if (child && typeof child === 'object') {
       walk(child, nextPath, out);
@@ -181,6 +184,206 @@ function buildVarRegistry(collections) {
     }
   }
   return registry;
+}
+
+// Collections with no intent of their own to document in intent.yaml —
+// intent.yaml never gets an entry for these; any that already exist
+// are actively removed on the next tokens:build. Two different reasons
+// land a collection here:
+//   - primitives/scale: raw values consumed by the semantic/component
+//     layers above them, not tokens that carry a role/meaning in their
+//     own right (see docs/glossary.yaml's "token layer order" entry:
+//     "primitives are raw values, owned separately").
+//   - components: pure aliases into the semantic layer (same "token
+//     layer order" entry). A component token's rationale — which
+//     semantic role it aliases and why — is already the specific job
+//     of that component's own <NAME>.md blueprint (CLAUDE.md/
+//     DESIGN.md's classification/rationale + "token usage"), and its
+//     accessibility properties are inherited from the semantic token
+//     it points to, not independent. Documenting it again here would
+//     just be a second copy that can drift from the blueprint.
+const INTENT_EXCLUDED_COLLECTIONS = new Set(['primitives', 'scale', 'components']);
+
+// Every non-excluded token's stable Figma variableId -> the CSS var
+// name/path it currently resolves to, plus the variableIds of tokens
+// in an excluded collection (kept separately so a leftover intent.yaml
+// entry for one can be told apart from a genuinely orphaned entry —
+// see docs/decisions/0009-token-intent-metadata.md). variableId
+// survives a Figma-side rename, so it's the key; varName/path are
+// labels kept in sync for humans, not the lookup key itself.
+function buildIdRegistry(collections) {
+  const registry = new Map();
+  const excludedIds = new Set();
+  for (const [collectionName, modes] of collections) {
+    const excluded = INTENT_EXCLUDED_COLLECTIONS.has(collectionName);
+    for (const tokens of modes.values()) {
+      for (const [path, entry] of tokens) {
+        if (!entry.variableId) continue;
+        if (excluded) {
+          excludedIds.add(entry.variableId);
+          continue;
+        }
+        const { varName } = cssVarName(path);
+        registry.set(entry.variableId, { varName, path });
+      }
+    }
+  }
+  return { registry, excludedIds };
+}
+
+const INTENT_STATUSES = new Set(['stable', 'experimental', 'deprecated']);
+
+function loadIntentDoc() {
+  if (!existsSync(INTENT_PATH)) {
+    return new Document({ version: 1, tokens: {} });
+  }
+  const doc = parseDocument(readFileSync(INTENT_PATH, 'utf8'));
+  if (!doc.hasIn(['tokens'])) doc.setIn(['tokens'], {});
+  return doc;
+}
+
+// `role` is derived from the token's dot-path, not hand-authored — it
+// mirrors docs/glossary.yaml's semantic token naming formula
+// (`{element}.{family}.{concept}.{state}.{context}`, element in
+// bg/text/border/icon, family in surface/fill, family only present
+// when element is `bg`). For a `bg.*` token the family segment is the
+// more specific structural tag, so role is that; for text/border/icon
+// tokens (no family segment) role is the element itself.
+function deriveRole(path) {
+  const [first, second] = path.split('.');
+  return first === 'bg' ? second : first;
+}
+
+// Mirrors docs/glossary.yaml's "container / control" entry (component
+// classification) back onto the surface/fill structural axis it's
+// built on: surface = background for container components, fill =
+// background for atomic control components. Only meaningful for a
+// `role` that's actually surface/fill (bg-element tokens) — a
+// text/border/icon token has no surface/fill family segment to derive
+// this from, so it stays null.
+function deriveClassification(role) {
+  if (role === 'surface') return 'container';
+  if (role === 'fill') return 'control';
+  return null;
+}
+
+// Adds a stub entry for any (non-excluded) token intent.yaml doesn't
+// know about yet, and keeps each existing entry's derived `token`/
+// `path`/`role` labels in sync with the current export (the
+// variableId itself never changes on rename). Never overwrites
+// status/usage/notFor/pairsWith/deprecated a human already filled in.
+// A `status: deprecated` entry missing `deprecated.replacement` gets
+// that key stubbed in (or flagged, if already present but empty) so a
+// deprecated token can't silently ship with no documented successor.
+// An entry belonging to an excluded collection (primitives/scale/
+// components) is removed outright — those never get intent. An entry
+// that's neither tracked nor excluded (its variableId no longer
+// appears in tokens-source/ at all) is reported as orphaned instead,
+// left for a human to remove.
+function reconcileIntent(doc, idRegistry, excludedIds) {
+  const added = [];
+  const relabeled = [];
+  const removed = [];
+  const stubbed = [];
+  const missingReplacement = [];
+  const seen = new Set();
+
+  for (const [variableId, { varName, path }] of idRegistry) {
+    seen.add(variableId);
+    const role = deriveRole(path);
+    const classification = deriveClassification(role);
+
+    if (!doc.hasIn(['tokens', variableId])) {
+      doc.setIn(['tokens', variableId], {
+        token: varName,
+        path,
+        role,
+        classification,
+        status: 'experimental',
+        usage: null,
+        notFor: null,
+        pairsWith: [],
+      });
+      added.push(varName);
+    } else {
+      const labels = { token: varName, path, role, classification };
+      const changes = [];
+      for (const [key, value] of Object.entries(labels)) {
+        if (doc.getIn(['tokens', variableId, key]) !== value) {
+          doc.setIn(['tokens', variableId, key], value);
+          changes.push(key);
+        }
+      }
+      if (changes.length > 0) relabeled.push({ token: varName, fields: changes });
+
+      const status = doc.getIn(['tokens', variableId, 'status']);
+      if (status != null && !INTENT_STATUSES.has(status)) {
+        throw new Error(
+          `intent.yaml entry "${varName}" (${variableId}) has status "${status}" — must be one of ` +
+            `${[...INTENT_STATUSES].join('/')}.`
+        );
+      }
+    }
+
+    const status = doc.getIn(['tokens', variableId, 'status']);
+    if (status === 'deprecated') {
+      if (!doc.hasIn(['tokens', variableId, 'deprecated'])) {
+        doc.setIn(['tokens', variableId, 'deprecated'], { replacement: null });
+        stubbed.push(varName);
+      }
+      if (!doc.getIn(['tokens', variableId, 'deprecated', 'replacement'])) {
+        missingReplacement.push(varName);
+      }
+    }
+  }
+
+  const orphaned = [];
+  const tokensJson = doc.get('tokens')?.toJSON?.() ?? {};
+  for (const variableId of Object.keys(tokensJson)) {
+    if (seen.has(variableId)) continue;
+    if (excludedIds.has(variableId)) {
+      removed.push(tokensJson[variableId]?.token ?? variableId);
+      doc.deleteIn(['tokens', variableId]);
+      continue;
+    }
+    orphaned.push(tokensJson[variableId]?.token ?? variableId);
+  }
+
+  return { added, relabeled, removed, stubbed, missingReplacement, orphaned };
+}
+
+function writeIntentIfChanged(doc, { added, relabeled, removed, stubbed }) {
+  if (added.length === 0 && relabeled.length === 0 && removed.length === 0 && stubbed.length === 0) return false;
+  writeFileSync(INTENT_PATH, String(doc), 'utf8');
+  return true;
+}
+
+// Hard gate: every tracked (non-excluded) token must be reviewed before
+// tokens:build passes. "Reviewed" means status isn't the just-stubbed
+// default (experimental), a stable token has usage/notFor actually
+// written (not just a status flip with the fields left null), and a
+// deprecated token names its replacement. This runs after the file is
+// written, so a failure still leaves the stub/flagged entry on disk,
+// ready to edit — the build fails loudly, but doesn't hide what to fix.
+// `pairsWith` is deliberately not part of this gate — not every token
+// has a meaningful accessibility pairing, so it's left optional for now.
+function collectReviewIssues(doc, idRegistry) {
+  const issues = [];
+  for (const variableId of idRegistry.keys()) {
+    const token = doc.getIn(['tokens', variableId, 'token']);
+    const status = doc.getIn(['tokens', variableId, 'status']);
+    const usage = doc.getIn(['tokens', variableId, 'usage']);
+    const notFor = doc.getIn(['tokens', variableId, 'notFor']);
+
+    if (status === 'experimental') {
+      issues.push(`${token}: status is "experimental" — not yet reviewed. Fill in usage/notFor and set status to "stable" (or "deprecated").`);
+    } else if (status === 'stable' && (!usage || !notFor)) {
+      issues.push(`${token}: status is "stable" but usage/notFor is empty — fill both in before marking stable.`);
+    } else if (status === 'deprecated' && !doc.getIn(['tokens', variableId, 'deprecated', 'replacement'])) {
+      issues.push(`${token}: status is "deprecated" but deprecated.replacement is empty.`);
+    }
+  }
+  return issues;
 }
 
 function aliasTargetVarName(aliasData) {
@@ -291,6 +494,38 @@ function main() {
   const css = generateCss(collections);
   writeFileSync(OUTPUT_PATH, css, 'utf8');
   console.log(`tokens:build wrote ${relative(PACKAGE_ROOT, OUTPUT_PATH)}`);
+
+  const { registry: idRegistry, excludedIds } = buildIdRegistry(collections);
+  const intentDoc = loadIntentDoc();
+  const result = reconcileIntent(intentDoc, idRegistry, excludedIds);
+  const { added, relabeled, removed, stubbed, orphaned } = result;
+  if (writeIntentIfChanged(intentDoc, result)) {
+    console.log(`tokens:build wrote ${relative(PACKAGE_ROOT, INTENT_PATH)}`);
+  }
+  if (added.length > 0) {
+    console.log(`  + ${added.length} new token(s) awaiting context: ${added.join(', ')}`);
+  }
+  if (relabeled.length > 0) {
+    for (const r of relabeled) console.log(`  ~ ${r.token}: ${r.fields.join(', ')} updated from Figma export`);
+  }
+  if (removed.length > 0) {
+    console.log(`  - ${removed.length} entry(ies) removed (${[...INTENT_EXCLUDED_COLLECTIONS].join('/')} don't carry intent here): ${removed.join(', ')}`);
+  }
+  if (stubbed.length > 0) {
+    console.log(`  ~ ${stubbed.length} deprecated entry(ies) missing a "deprecated" block, stubbed: ${stubbed.join(', ')}`);
+  }
+  if (orphaned.length > 0) {
+    console.log(`  ! ${orphaned.length} intent.yaml entry(ies) with no matching source token (rename/delete?): ${orphaned.join(', ')}`);
+    console.log('    Remove them from intent.yaml once confirmed stale — tokens:build never deletes an entry itself.');
+  }
+
+  const reviewIssues = collectReviewIssues(intentDoc, idRegistry);
+  if (reviewIssues.length > 0) {
+    throw new Error(
+      `${reviewIssues.length} token(s) in intent.yaml need review before tokens:build can pass:\n` +
+        reviewIssues.map((m) => `  - ${m}`).join('\n')
+    );
+  }
 }
 
 try {

@@ -9,12 +9,20 @@ context needed to keep design and code in sync for Eldrin UI.
 
 ## Tokens
 
-Tokens live in `packages/eldrin-ui/src/tokens/` and are the source of truth. Each token carries
-intent metadata:
+Tokens live in `packages/eldrin-ui/src/tokens/` and are the source of truth. Semantic tokens
+carry intent metadata in `packages/eldrin-ui/src/tokens/intent.yaml` (see
+`docs/decisions/0009-token-intent-metadata.md`):
 
-- **purpose** — what the token is for
-- **anti-purpose** — what it is explicitly not for
-- **accessibility** — any contrast/sizing requirements it must satisfy
+- **usage** — what the token is for
+- **notFor** — what it is explicitly not for
+- **pairsWith** — other tokens it's designed to be used alongside for accessibility (e.g. a
+  bg fill paired with the text token contrast-verified against it)
+- **role** — its structural category (bg / surface / fill / text / border / icon)
+- **status** — stable / experimental / deprecated (deprecated entries name their `replacement`)
+
+Primitive and scale/spacing tokens are raw values with no intent of their own; component tokens'
+rationale lives in that component's own `<NAME>.md` blueprint instead — neither gets an
+`intent.yaml` entry.
 
 ## Components
 

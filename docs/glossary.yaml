@@ -83,6 +83,45 @@ entries:
       naming schemes instead of one token shown two ways.
     status: decided
 
+  - term: token intent metadata
+    category: token-structure
+    decision: >
+      Per-token intent (per CLAUDE.md/DESIGN.md) lives in
+      `packages/eldrin-ui/src/tokens/intent.yaml`, keyed by the token's
+      Figma `com.figma.variableId` — not its CSS var name, which can
+      change on a Figma-side rename. Fields: `token`/`path`/`role`/
+      `classification` (derived, kept in sync automatically — role is
+      bg/surface/fill/text/border/icon, from the semantic naming formula
+      below; classification is container/control/null, derived from
+      role per the "container / control" entry below: role surface ->
+      container, role fill -> control, null otherwise),
+      `status` (stable/experimental/deprecated), `deprecated.replacement`
+      (required once status is deprecated; stubbed in automatically),
+      `usage` (what it's for), `notFor` (what it's explicitly not for),
+      `pairsWith` (other tokens it's designed to pair with for
+      accessibility, e.g. a bg-fill token listing the onFill text token
+      it's contrast-checked against). `npm run tokens:build` reconciles
+      this file every run — appends a stub for any new token, keeps
+      derived labels in sync, flags (never deletes) an entry whose token
+      no longer exists in `tokens-source/` — then fails the build if any
+      tracked token is unreviewed: `status: experimental` (the stub
+      default), `status: stable` with `usage`/`notFor` still empty, or
+      `status: deprecated` with no `deprecated.replacement`. A token
+      cannot ship undocumented. Only `semantics` tokens get an entry:
+      `primitives`/`scale` are raw, consumption-only
+      values with no independent intent to document, and `components`
+      tokens are pure aliases whose rationale already lives in that
+      component's own `<NAME>.md` blueprint — all three are actively
+      excluded.
+    rationale: >
+      Figma's own variable export carries no intent field (ADR 0008
+      scoped it out of the import pipeline), so it has to be
+      hand-authored somewhere else. Keying by variableId instead of the
+      derived var name survives the exact failure mode a name-keyed file
+      doesn't: a rename in Figma. See ADR 0009 for the full decision and
+      alternatives considered.
+    status: decided
+
   - term: surface / fill
     category: token-structure
     decision: >
@@ -210,7 +249,13 @@ entries:
       Popover). `control` = atomic, self-contained element (Button,
       Badge). Recorded per-component in that component's own
       `<NAME>.md` blueprint (`classification` + `rationale`
-      frontmatter) — no separate classification.yaml.
+      frontmatter) — no separate classification.yaml. The same
+      `container`/`control` vocabulary also appears, derived rather
+      than hand-authored, as `intent.yaml`'s `classification` field on
+      `surface`/`fill` tokens (see the "token intent metadata" entry
+      above) — same distinction, two different sources: a component
+      decides its own classification, a token's is a mechanical
+      consequence of which family (`surface` or `fill`) it belongs to.
     rationale: "Determines which token family (surface/fill) a component uses."
     status: decided
 

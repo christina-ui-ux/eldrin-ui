@@ -1,0 +1,98 @@
+# packages/eldrin-ui/src/tokens/intent.yaml
+#
+# Intent metadata for design tokens, per CLAUDE.md / DESIGN.md. Figma's
+# own export carries no such field (see ADR 0008), so it's hand-authored
+# here instead, separate from tokens-source/ (Figma-only) and
+# generated.css (auto-generated CSS output).
+#
+# Keyed by each token's Figma `com.figma.variableId` (e.g.
+# "VariableID:10:79"), not by its CSS var name — the id is stable
+# across a Figma-side rename, the name isn't. See
+# docs/decisions/0009-token-intent-metadata.md.
+#
+# Only semantic tokens get an entry here (see docs/glossary.yaml's
+# "token layer order" entry):
+#   - primitives/scale are raw values consumed by the layers above
+#     them, not tokens with a role of their own to document.
+#   - component tokens are pure aliases into the semantic layer; a
+#     component token's rationale (which semantic role it aliases and
+#     why) already lives in that component's own <NAME>.md blueprint,
+#     and its accessibility properties are inherited from the semantic
+#     token it points to — documenting it again here would just drift
+#     from the blueprint.
+#
+# Fields per entry:
+#   token        CSS var name (e.g. "--bg-fill-primary"). Derived,
+#                kept in sync automatically — not hand-authored.
+#   path         Dot-notation key (e.g. "bg.fill.primary"). Derived,
+#                kept in sync automatically — not hand-authored.
+#   role         One of bg/surface/fill/text/border/icon. Derived from
+#                `path` per the glossary's semantic token naming
+#                formula: the family segment (surface/fill) for a `bg`
+#                token, the element segment itself (text/border/icon)
+#                otherwise. Kept in sync automatically.
+#   classification  container | control | null. Derived from `role`,
+#                mirroring the glossary's "container / control"
+#                component-classification entry back onto the
+#                surface/fill axis it's built on: role "surface" ->
+#                "container", role "fill" -> "control". Null when
+#                `role` isn't surface/fill (a text/border/icon token
+#                has no such axis). Kept in sync automatically.
+#   status       stable | experimental | deprecated. Hand-authored.
+#   deprecated   Present only when status is "deprecated":
+#                  replacement: the token that takes over (CSS var
+#                  name or dot path). tokens:build stubs this block in
+#                  (replacement: null) the moment status flips to
+#                  "deprecated" — an empty replacement fails the build
+#                  (see below).
+#   usage        What the token is for. Hand-authored.
+#   notFor       What it's explicitly not for. Hand-authored.
+#   pairsWith    List of other tokens (CSS var name or dot path) this
+#                one is designed to be used alongside for accessibility
+#                (e.g. a bg-fill token paired with the onFill text
+#                token that's contrast-checked against it). Hand-authored.
+#
+# `npm run tokens:build` (packages/eldrin-ui) reconciles this file on
+# every run:
+#   - a semantic token with no entry here gets a stub appended
+#     (status: experimental, usage/notFor null, pairsWith empty) so a
+#     diff of this file after an export shows exactly what's new
+#   - an existing entry's derived `token`/`path`/`role`/`classification`
+#     labels are kept in sync with the current export (cosmetic only —
+#     the variableId key doesn't change); status/usage/notFor/
+#     pairsWith/deprecated, anything a human wrote, is left alone
+#   - an entry belonging to primitives/scale/components is removed
+#     outright
+#   - an entry whose variableId no longer appears in tokens-source/ at
+#     all (and isn't a primitives/scale/components removal) is reported
+#     as orphaned but never auto-deleted; remove it by hand once
+#     confirmed stale
+#   - an invalid `status` value fails the build
+#
+# This file IS a build gate: after reconciling (so the stub/flag above
+# actually lands on disk first), `tokens:build` fails if any tracked
+# token is unreviewed —
+#   - status: experimental (the stub default — not yet reviewed)
+#   - status: stable with usage or notFor still empty (a status flip
+#     with no content written doesn't count as reviewed)
+#   - status: deprecated with no deprecated.replacement
+# A `git diff` on this file after an export shows exactly what's new;
+# the failed build is what forces it to actually get filled in rather
+# than just sitting there.
+
+version: 1
+tokens:
+  VariableID:10:79:
+    token: --bg-fill-primary
+    path: bg.fill.primary
+    role: fill
+    classification: control
+    status: experimental
+    usage: >-
+      Default-state background fill for the primary (main accent/CTA)
+      control — the base color a control uses to signal "this is the
+      main action" before any hover/active/selected/disabled state is
+      applied. Currently consumed by Button's primary variant via
+      --button-primary-background.
+    notFor: null
+    pairsWith: []
