@@ -26,18 +26,21 @@
 #                kept in sync automatically — not hand-authored.
 #   path         Dot-notation key (e.g. "bg.fill.primary"). Derived,
 #                kept in sync automatically — not hand-authored.
-#   role         One of bg/surface/fill/text/border/icon. Derived from
-#                `path` per the glossary's semantic token naming
+#   role         One of bg/surface/fill/text/border/icon/space. Derived
+#                from `path` per the glossary's semantic token naming
 #                formula: the family segment (surface/fill) for a `bg`
-#                token, the element segment itself (text/border/icon)
-#                otherwise. Kept in sync automatically.
+#                token, the element segment itself (text/border/icon/
+#                space) otherwise. Kept in sync automatically. `space`
+#                isn't exported yet (see glossary's "semantic spacing
+#                naming" entry) — listed here so this comment doesn't
+#                go stale the moment it is.
 #   classification  container | control | null. Derived from `role`,
 #                mirroring the glossary's "container / control"
 #                component-classification entry back onto the
 #                surface/fill axis it's built on: role "surface" ->
 #                "container", role "fill" -> "control". Null when
-#                `role` isn't surface/fill (a text/border/icon token
-#                has no such axis). Kept in sync automatically.
+#                `role` isn't surface/fill (a text/border/icon/space
+#                token has no such axis). Kept in sync automatically.
 #   status       stable | experimental | deprecated. Hand-authored.
 #   deprecated   Present only when status is "deprecated":
 #                  replacement: the token that takes over (CSS var
@@ -83,16 +86,159 @@
 version: 1
 tokens:
   VariableID:10:79:
-    token: --bg-fill-primary
-    path: bg.fill.primary
+    token: --bg-fill-interaction
+    path: bg.fill.interaction
     role: fill
     classification: control
-    status: experimental
+    status: stable
     usage: >-
-      Default-state background fill for the primary (main accent/CTA)
-      control — the base color a control uses to signal "this is the
-      main action" before any hover/active/selected/disabled state is
-      applied. Currently consumed by Button's primary variant via
-      --button-primary-background.
-    notFor: null
+      Default-state background fill for the primary (main accent/CTA) control —
+      the base color a control uses to signal "this is the main action" before
+      any hover/active/selected/disabled state is applied.
+    notFor: surface background color, non-interactive background
+    pairsWith: []
+  VariableID:15:37:
+    token: --bg-fill-error
+    path: bg.fill.error
+    role: fill
+    classification: control
+    status: stable
+    usage: >-
+      Background fill for a control communicating an error or destructive state
+      (e.g. a destructive/delete button, or a control flagged invalid) — the
+      fill color a control uses to signal "this represents an error or a
+      destructive action."
+    notFor: surface background color, non-interactive background, default/neutral
+      control fill
+    pairsWith: [ --text-on-fill-error ]
+  VariableID:15:28:
+    token: --bg-surface-base
+    path: bg.surface.base
+    role: surface
+    classification: container
+    status: stable
+    usage: >-
+      Neutral background for a container component that accepts child content —
+      the `base` value on the concept axis (see docs/glossary.yaml's `base`
+      entry): no specific color role applied, same as `bg.fill.base`/`text.base`
+      would be for their own elements. Also the un-elevated (ground-level)
+      surface — an elevated container (Card, Popover, etc.) should use the
+      future `raised` token once one exists, not this one.
+    notFor: >-
+      control fill, interactive/pressable background, error surface variant, an
+      elevated/raised container surface
+    pairsWith: []
+  VariableID:15:38:
+    token: --bg-surface-error
+    path: bg.surface.error
+    role: surface
+    classification: container
+    status: stable
+    usage: >-
+      Background for a container component when it is communicating an error
+      state (e.g. an inline error panel, an invalid form section, an alert
+      container) — the surface color a container uses to signal "this content
+      represents an error."
+    notFor: control fill, default/neutral surface, non-error alert surfaces
+    pairsWith: []
+  VariableID:15:30:
+    token: --text-base
+    path: text.base
+    role: text
+    classification: null
+    status: stable
+    usage: >-
+      Base body text color — the `base` value on the concept axis (see
+      docs/glossary.yaml's `base` entry): no specific color role applied, used
+      wherever no more specific semantic text role (primary, error, on-fill,
+      etc.) applies.
+    notFor: >-
+      text placed on top of a fill background (use an on-fill variant instead),
+      emphasized/primary text, error text
+    pairsWith: []
+  VariableID:15:32:
+    token: --text-primary
+    path: text.primary
+    role: text
+    classification: null
+    status: stable
+    usage: >-
+      Text rendered in the primary (main accent/CTA) color role — e.g. a link,
+      an emphasized label, or text calling attention using the accent color —
+      set on a surface background, not on top of a filled control.
+    notFor: >-
+      text on top of a bg-fill-primary/interaction background (use
+      text-on-fill-primary instead), base/neutral body text, error text
+    pairsWith: []
+  VariableID:15:25:
+    token: --text-on-fill-primary
+    path: text.on-fill-primary
+    role: text
+    classification: null
+    status: stable
+    usage: >-
+      Text/icon color for content placed directly on top of a
+      bg-fill-interaction (primary) background — e.g. label text inside a
+      primary/filled button — contrast-verified against that fill.
+    notFor: >-
+      text on a surface/base background, text on any other fill color (error,
+      etc.), text-primary's own surface-background use case
+    pairsWith: [ --bg-fill-interaction ]
+  VariableID:15:39:
+    token: --text-error
+    path: text.error
+    role: text
+    classification: null
+    status: stable
+    usage: >-
+      Text color for content communicating an error (e.g. a validation message,
+      an inline error label) — set on a surface/base background, not on top of a
+      filled control.
+    notFor: >-
+      text on top of a bg-fill-error background (use text-on-fill-error
+      instead), base/neutral text
+    pairsWith: []
+  VariableID:15:40:
+    token: --text-on-fill-error
+    path: text.on-fill-error
+    role: text
+    classification: null
+    status: stable
+    usage: >-
+      Text/icon color for content placed directly on top of a bg-fill-error
+      background — e.g. label text inside a destructive/error-filled button —
+      contrast-verified against that fill.
+    notFor: >-
+      text on a surface/base background, text on any other fill color,
+      text-error's own surface-background use case
+    pairsWith: [ --bg-fill-error ]
+  VariableID:15:31:
+    token: --border-control
+    path: border.control
+    role: border
+    classification: null
+    status: stable
+    usage: >-
+      Default border color for atomic control components (e.g. Input, Checkbox,
+      Select) — the border a control uses in its neutral/default state.
+      Note: `control` here is a plain-English description in the `concept`
+      slot (border has no `family` segment), not a value on the surface/fill
+      classification axis — see the glossary's "container / control" entry.
+    notFor: container/surface borders, error/focus border variants, divider lines
+    pairsWith: []
+  VariableID:17:42:
+    token: --bg-surface-raised
+    path: bg.surface.raised
+    role: surface
+    classification: container
+    status: stable
+    usage: >-
+      Background for a container component that sits above the page's
+      `base` surface (e.g. Card, Popover) — the `raised` elevation value
+      (see docs/glossary.yaml's `raised` entry), orthogonal to the concept
+      axis: a raised surface can still carry `base`, or in principle any
+      other concept, on top of it.
+    notFor: >-
+      control fill, the page-level/ground surface (use bg-surface-base for
+      that), error surface variant
     pairsWith: []

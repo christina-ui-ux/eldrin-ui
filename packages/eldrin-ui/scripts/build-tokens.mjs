@@ -118,11 +118,30 @@ function loadFile(file) {
 // mode comes from the file's own $extensions.com.figma.modeName, the
 // filename suffix is just expected to agree with it, never trusted on
 // its own.
-function collectionNameFor(fileBase, modeName) {
-  if (modeName && fileBase.endsWith(`-${modeName}`)) {
-    return fileBase.slice(0, -(modeName.length + 1));
+//
+// Figma normally exports a mode's bare name ("large"), which is what
+// lets us strip it off the filename above. But when two collections
+// share a mode name, Figma instead qualifies it with the collection
+// name ("scale-large") — the same shape as the filename itself, so the
+// bare-suffix strip no longer matches. Recognize that qualified form by
+// checking it against every collection name already registered in
+// DEFAULT_MODE (every multi-mode collection has to be registered there
+// regardless), and recover the bare mode key from it too — otherwise
+// DEFAULT_MODE's bare mode names (e.g. "light") would never match.
+function parseCollectionAndMode(fileBase, modeName) {
+  if (!modeName) return { collectionName: fileBase, modeKey: '__default__' };
+
+  if (fileBase.endsWith(`-${modeName}`)) {
+    return { collectionName: fileBase.slice(0, -(modeName.length + 1)), modeKey: modeName };
   }
-  return fileBase;
+
+  for (const collectionName of Object.keys(DEFAULT_MODE)) {
+    if (fileBase === modeName && modeName.startsWith(`${collectionName}-`)) {
+      return { collectionName, modeKey: modeName.slice(collectionName.length + 1) };
+    }
+  }
+
+  return { collectionName: fileBase, modeKey: modeName };
 }
 
 function applyCollectionPrefix(tokens, collectionName) {
@@ -145,8 +164,7 @@ function loadCollections() {
   for (const file of files) {
     const fileBase = basename(file).replace(/\.tokens\.json$|\.json$/, '');
     const { tokens, modeName } = loadFile(join(SOURCE_DIR, file));
-    const collectionName = collectionNameFor(fileBase, modeName);
-    const modeKey = modeName ?? '__default__';
+    const { collectionName, modeKey } = parseCollectionAndMode(fileBase, modeName);
 
     if (!collections.has(collectionName)) collections.set(collectionName, new Map());
     const modes = collections.get(collectionName);

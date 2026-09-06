@@ -51,9 +51,8 @@ No individual component gets its own "is this a touch context" prop.
   rejected because it
   doesn't scale as a pattern: every new component must remember to add
   and wire the prop individually, and a forgotten one fails silently
-  (the same class of bug as Astryx's progress bar quietly falling back
-  to a default when a token wasn't wired — see the naming glossary
-  discussion). Nothing catches the omission at build time.
+  (a token not wired quietly falling back to a default — see the naming
+  glossary discussion). Nothing catches the omission at build time.
 
 - **Pure CSS media query per component, no context at all** — viable
   and simpler than the boolean-prop option, but rejected as the final
