@@ -11,7 +11,8 @@
   },
   "scripts": {
     "lint": "oxlint",
-    "tokens:build": "node scripts/build-tokens.mjs"
+    "tokens:build": "node scripts/build-tokens.mjs",
+    "check:blueprints": "node scripts/check-blueprints.mjs"
   },
   "devDependencies": {
     "oxlint": "^1.75.0"
