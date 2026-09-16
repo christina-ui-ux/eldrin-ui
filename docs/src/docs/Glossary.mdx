@@ -1,13 +1,13 @@
-import { Meta, Source } from '@storybook/addon-docs/blocks';
-import glossaryRaw from '../../glossary.yaml?raw';
+import { Meta } from '@storybook/addon-docs/blocks';
+import { GlossaryPage } from './Glossary';
 
 <Meta title="Glossary" />
 
 # Glossary
 
-Single source of truth for naming decisions across the whole system —
-read directly from `docs/glossary.yaml`, so this can't drift from the
-file that `npm run lint:glossary` actually enforces (see ADR 0002 in
-Architecture Decisions).
+A curated subset of naming decisions from `docs/glossary.yaml` — the
+full file stays the lint-enforced source of truth (`npm run
+lint:glossary`, ADR 0002). Which terms appear here is picked by hand in
+`docs/src/docs/glossary-storybook.yaml`.
 
-<Source code={glossaryRaw} language="yaml" dark />
+<GlossaryPage />

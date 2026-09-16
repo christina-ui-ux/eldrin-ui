@@ -1,0 +1,12 @@
+# Curated subset of docs/glossary.yaml shown on the Storybook Glossary
+# page. docs/glossary.yaml itself stays the full, lint-enforced naming-
+# decision source of truth (npm run lint:glossary, ADR 0002) — this file
+# only controls what a reader of the public docs site sees, and is
+# maintained by hand, not generated.
+#
+# List the exact `term` string from docs/glossary.yaml for each entry
+# you want visible here, in the order you want them shown. A term not
+# listed here simply doesn't appear on the site, even though it's still
+# enforced in docs/glossary.yaml.
+
+terms: []

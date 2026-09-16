@@ -64,11 +64,30 @@ current API.
   still an empty `{}` interface and every component still renders
   `null` — inventing variant/prop content ahead of the spec would just
   be fabricated documentation.
-- **ADRs, the glossary, and the tokens/colors page are custom
-  docs-only Storybook pages** under `docs/src/docs/`, each reading its
-  source file directly at build time rather than a copy:
-  - `Decisions.mdx` + `Decisions.tsx`: `import.meta.glob('../../decisions/[0-9][0-9][0-9][0-9]-*.md', { query: '?raw', eager: true })` reads every ADR (the same numeric-prefix pattern Astro's content collection used to exclude `template.md`), splits YAML frontmatter from the markdown body with a small hand-rolled parser (the frontmatter shape — `id`/`title`/`status`/`date`/`superseded_by` — is flat key/value, not worth a YAML dependency), and renders the body with `react-markdown`. Adding a new ADR file requires zero site code changes, same guarantee ADR 0003 established.
-  - `Glossary.mdx`: raw-imports `docs/glossary.yaml` (`?raw`) and renders it as a syntax-highlighted block via `@storybook/addon-docs/blocks`'s `Source`. This is intentionally less structured than the ADR page — parsing and rendering 361 lines of nested YAML entries into a bespoke UI was scoped out as unnecessary engineering for now; the raw-file-is-truth property is preserved either way.
+- **ADRs are not surfaced in Storybook at all.** An earlier draft of
+  this ADR had a `Decisions.mdx`/`Decisions.tsx` page reading every
+  ADR via `import.meta.glob`; that page is removed per explicit
+  direction before this ADR was accepted. `docs/decisions/*.md` remain
+  the ADR source of truth, readable directly in the repo — they are
+  just not rendered anywhere in the built docs site.
+- **The glossary and the tokens/colors page are custom docs-only
+  Storybook pages** under `docs/src/docs/`, each reading its source
+  file directly at build time rather than a copy:
+  - `Glossary.mdx` + `Glossary.tsx`: a **curated subset**, not a raw
+    dump of the full file. `docs/glossary.yaml` (still the
+    lint-enforced source of truth, ADR 0002) and a hand-maintained
+    allowlist, `docs/src/docs/glossary-storybook.yaml` (a bare
+    `terms: [...]` list of exact `term` strings, in display order),
+    are both parsed with the `yaml` package (added to
+    `docs/package.json` — the same parser `scripts/lint-glossary.mjs`
+    and `build-tokens.mjs` already use at the repo root) and the
+    entries matching the allowlist are rendered structured
+    (term/category/decision/rationale, via `react-markdown` for the
+    inline-code formatting the prose already uses) rather than as a
+    syntax-highlighted block. A term left out of the allowlist is
+    simply absent from the site, even though it's still enforced in
+    `docs/glossary.yaml` — curation is a docs-presentation choice, not
+    a change to what's a decided naming rule.
   - `TokensColors.tsx` + `.stories.tsx`: ported `docs/src/pages/tokens/colors.astro`'s `extractBlocks`/`extractVars` regex logic verbatim (reads `packages/eldrin-ui/src/tokens/generated.css` via `?raw`, buckets primitives/semantics/components by value shape, renders swatch grids with light/dark primitive pairs). This one is a real Storybook *story* (interactive), not a docs-only page — it's component-shaped, unlike the ADR/glossary pages.
   - `Introduction.mdx`: static welcome content, ported from `docs/src/pages/core/introduction.md`. Cross-page links that used to need Astro's `withBase()` handling for the GitHub Pages subpath are gone — Storybook is a single-page app with its own sidebar navigation, not raw relative links between rendered markdown pages.
 - **Hosting stays GitHub Pages**, but the build step changes:
@@ -102,12 +121,20 @@ current API.
 - **Components-only Storybook, keep Astro for ADRs/glossary/prose** —
   the other option presented this session; not chosen. The user picked
   full replacement over running two docs tools side by side.
-- **Structured per-entry glossary UI** (parse the YAML into a real
-  component instead of a syntax-highlighted block) — deferred, not
-  rejected outright: real engineering cost for 361 lines of nested
-  entries, and the raw-YAML-as-source-of-truth property doesn't need it
-  to hold. Revisit if the glossary page's raw-YAML view proves hard to
-  scan in practice.
+- **Structured per-entry glossary UI, parsing the full file** — the
+  first draft deferred this (see history below); once curation was
+  needed anyway, parsing became required regardless, so this is now
+  built rather than deferred. What's still scoped out is a *searchable*
+  or filterable UI beyond a hand-picked list — revisit if the curated
+  set grows large enough to want that.
+- **A raw-YAML syntax-highlighted dump of the full glossary file**
+  (the first draft's approach) — rejected per explicit direction: the
+  full 361-line file isn't meant to be public-facing as-is; only a
+  hand-picked subset should appear on the docs site.
+- **An ADR page in Storybook** (`Decisions.mdx`/`Decisions.tsx`,
+  reading every `docs/decisions/*.md` via `import.meta.glob`) — built
+  in the first draft, then removed per explicit direction before this
+  ADR was accepted. ADRs stay in the repo only.
 - **A `yaml`-parsing dependency for ADR frontmatter** — rejected: ADR
   frontmatter is five flat `key: value` lines, not nested structure; a
   regex-based line parser is simpler than pulling in a YAML parser for
@@ -131,10 +158,14 @@ Storybook's `addon-a11y` gives every future filled-in story a live
 accessibility check for free, which the old Astro site had no
 equivalent of.
 
-Harder: the glossary page is intentionally less polished than the old
-Astro version (raw YAML in a code block, not a parsed/searchable list) —
-a real gap if the glossary grows past what's comfortable to
-eyeball-scan in that form. The deploy workflow's path filter now spans
+Harder: the curated glossary needs manual upkeep — a term decided in
+`docs/glossary.yaml` doesn't appear on the public site until someone
+also adds it to `docs/src/docs/glossary-storybook.yaml`, an easy step
+to forget, and there's no lint checking the two stay related (unlike
+`docs/glossary.yaml` itself, which `lint:glossary` enforces). ADRs are
+no longer readable from the built docs site at all — anyone wanting
+decision history needs repo access (e.g. GitHub), not just the public
+Pages URL. The deploy workflow's path filter now spans
 two directories (`docs/**` and
 `packages/eldrin-ui/src/components/**/*.stories.*`) instead of one,
 which is one more place a future contributor could forget to update if
