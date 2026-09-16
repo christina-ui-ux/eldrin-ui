@@ -1,0 +1,38 @@
+[
+  {
+    "id": "light-medium",
+    "name": "light-medium",
+    "selectedTokenSets": {
+      "primitives-light": "enabled",
+      "primitives-dark": "disabled",
+      "scale-medium": "enabled",
+      "scale-large": "disabled",
+      "semantic": "enabled",
+      "component": "enabled"
+    }
+  },
+  {
+    "id": "dark",
+    "name": "dark",
+    "selectedTokenSets": {
+      "primitives-light": "disabled",
+      "primitives-dark": "enabled",
+      "scale-medium": "enabled",
+      "scale-large": "disabled",
+      "semantic": "enabled",
+      "component": "enabled"
+    }
+  },
+  {
+    "id": "large",
+    "name": "large",
+    "selectedTokenSets": {
+      "primitives-light": "enabled",
+      "primitives-dark": "disabled",
+      "scale-medium": "disabled",
+      "scale-large": "enabled",
+      "semantic": "enabled",
+      "component": "enabled"
+    }
+  }
+]

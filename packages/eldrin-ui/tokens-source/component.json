@@ -1,0 +1,8 @@
+{
+  "button": {
+    "primary": {
+      "background": { "$type": "color", "$value": "{bg.fill.interaction}" },
+      "text": { "$type": "color", "$value": "{text.on-fill-primary}" }
+    }
+  }
+}

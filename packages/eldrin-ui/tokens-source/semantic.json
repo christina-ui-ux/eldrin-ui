@@ -1,0 +1,23 @@
+{
+  "bg": {
+    "fill": {
+      "interaction": { "$type": "color", "$value": "{seagull.600}" },
+      "error": { "$type": "color", "$value": "{red.500}" }
+    },
+    "surface": {
+      "base": { "$type": "color", "$value": "{gray.50}" },
+      "raised": { "$type": "color", "$value": "{gray.0}" },
+      "error": { "$type": "color", "$value": "{red.200}" }
+    }
+  },
+  "text": {
+    "base": { "$type": "color", "$value": "{deep.950}" },
+    "primary": { "$type": "color", "$value": "{seagull.600}" },
+    "on-fill-primary": { "$type": "color", "$value": "{gray.0}" },
+    "error": { "$type": "color", "$value": "{red.950}" },
+    "on-fill-error": { "$type": "color", "$value": "{gray.0}" }
+  },
+  "border": {
+    "control": { "$type": "color", "$value": "{gray.400}" }
+  }
+}

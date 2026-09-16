@@ -1,9 +1,9 @@
 ---
 id: 0008
 title: Figma token import pipeline (tokens-source/ + build-tokens.mjs)
-status: proposed
+status: superseded
 date: 2026-08-24
-superseded_by:
+superseded_by: 0013
 ---
 
 # Context
