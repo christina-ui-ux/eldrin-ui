@@ -5,9 +5,12 @@ AI context for Claude Code working in this repo.
 ## Project
 
 Eldrin UI — a React component library that ships design tokens with intent
-metadata and components with machine-readable blueprints, so both humans and
+metadata and components with machine-readable specs, so both humans and
 AI agents can reason about *why* a token or component exists, not just *what*
-it renders.
+it renders. Specs are spec-driven design (SDD): the spec is the single
+source of truth for a component, generating both the code implementation
+and the Figma component (see
+`docs/decisions/0011-spec-single-source-of-truth.md`).
 
 ## Stack
 
@@ -20,19 +23,24 @@ it renders.
 
 - npm workspace root (`package.json`, `"workspaces": ["packages/*", "apps/*", "docs"]`)
 - `packages/eldrin-ui/src/tokens/` — design tokens with intent metadata
-- `packages/eldrin-ui/src/components/<Name>/` — component + its blueprint (`<NAME>.md`) + types
+- `packages/eldrin-ui/src/components/<Name>/` — component + its spec (`<NAME>.md`) + types
 - `apps/playground/` — Vite app for prototyping against the library (workspace-linked to `packages/eldrin-ui`, never published)
 - `docs/` — Astro docs site, workspace member
 
 ## Conventions
 
-- Every component ships a `<NAME>.md` blueprint alongside its `.tsx` and
+- Every component ships a `<NAME>.md` spec alongside its `.tsx` and
   `.types.ts` files before implementation is considered done. Each
-  blueprint states its `classification` (container/control) and the
+  spec states its `classification` (container/control) and the
   `rationale` behind it — the rationale is also what determines which
   token set the component draws from: `container` uses `bg-surface-*`
   + base text/icon tokens, `control` uses `bg-fill-*` + `onFill`
   text/icon tokens (see `docs/decisions/0001-component-token-set-selection.md`).
+  The spec is written first and is the single source of truth: the code
+  and the Figma component are both generated from it (see
+  `docs/decisions/0011-spec-single-source-of-truth.md`) — edit the spec,
+  then regenerate, rather than hand-editing the generated code or Figma
+  component directly.
 - Every design token should document intent (what it's for, what it's not
   for) and accessibility requirements.
 
@@ -66,7 +74,7 @@ actually reading it defeats the point of writing it down at all.
 **What counts as "significant" (needs an ADR) vs. not:**
 Classifying a single new component as container/control does NOT need
 an ADR — that's covered by its own `classification` and `rationale`
-fields in the component's `<NAME>.md` blueprint. An ADR is for
+fields in the component's `<NAME>.md` spec. An ADR is for
 decisions that change the *rules* other components will follow.
 
 **If a decision is later reversed:**

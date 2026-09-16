@@ -26,11 +26,21 @@ rationale lives in that component's own `<NAME>.md` blueprint instead — neithe
 
 ## Components
 
-Each component under `packages/eldrin-ui/src/components/<Name>/` has a blueprint
-(`<NAME>.md`) describing its anatomy, states, and token usage — intended to
-stay in sync with the corresponding Figma component.
+Each component under `packages/eldrin-ui/src/components/<Name>/` has a spec
+(`<NAME>.md`) describing its classification, anatomy, variants, sizes,
+states, tokens, props, and more. The spec is the **single source of
+truth** for the component (see
+`docs/decisions/0011-spec-single-source-of-truth.md`): both the code and
+the Figma component are generated from it, and neither is independently
+authoritative. Edit the spec first, then generate or update the Figma
+component from it, rather than hand-editing the Figma instance directly.
+The spec's `## Tokens used` section is what a generator binds to Figma
+variables — see `docs/decisions/0009-token-intent-metadata.md` for how
+those variables already map to CSS vars via `intent.yaml`.
 
 ## Status
 
-Figma library + Token Studio sync and Figma MCP drift detection are planned
-(see README "Next").
+Figma library + Token Studio sync are planned (see README "Next"). Spec →
+Figma generation is the current direction (ADR 0011); Figma MCP drift
+detection (reconciling a hand-edited Figma instance back into its spec) is
+explicitly not the model — regenerating/overwriting from the spec is.

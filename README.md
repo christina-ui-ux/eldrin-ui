@@ -6,7 +6,7 @@
 ![AI ready](https://img.shields.io/badge/AI--ready-Claude%20Code%20%26%20Cursor-violet)
 [![docs](https://img.shields.io/badge/docs-christina--ui--ux.github.io%2Feldrin--ui-blue)](https://christina-ui-ux.github.io/eldrin-ui/)
  
-Open-source React component library with structured design token intent and component blueprints. Designed for Claude Code and Cursor. Built for humans and AI agents alike.
+Open-source React component library with structured design token intent and component specs. Designed for Claude Code and Cursor. Built for humans and AI agents alike.
  
 📖 **[Read the docs](https://christina-ui-ux.github.io/eldrin-ui/)**
  
@@ -18,10 +18,10 @@ Open-source React component library with structured design token intent and comp
  
 Most component libraries ship components. Eldrin UI is an attempt to ship **meaning** alongside them.
  
-The core idea: what if every token knew why it existed, and every component came with a blueprint that both humans and AI agents could read and reason with?
+The core idea: what if every token knew why it existed, and every component came with a spec that both humans and AI agents could read and reason with?
  
 - **Token intent** — every design token carries metadata: what it's for, what it's not for, and accessibility requirements
-- **Component blueprints** — every component is defined by a machine-readable blueprint before a single line of code is written
+- **Component specs** — every component is defined by a machine-readable spec before a single line of code is written; the spec is upstream of both the code and the generated Figma component
 - **AI-first structure** — `CLAUDE.md` and `DESIGN.md` give Claude Code and Cursor the full system context out of the box
 ---
  
@@ -32,7 +32,7 @@ Eldrin UI is being built in the open, one component at a time.
 **Now**
 - Core token system with intent metadata
 - First components: Foundation, Button, Input, Badge, Card
-- Component blueprints for each
+- Component specs for each
 - Astro docs site and a workspace-linked playground app, both scaffolded — content is still thin
 **Next**
 - Real component implementations, rendered live in the docs site and prototyped in the playground
@@ -79,9 +79,9 @@ eldrin-ui/
 │   └── eldrin-ui/                # the published component library
 │       └── src/
 │           ├── tokens/            # Design tokens with intent metadata
-│           └── components/        # Components + blueprints
+│           └── components/        # Components + specs
 │               └── Button/
-│                   ├── BUTTON.md  # Component blueprint
+│                   ├── BUTTON.md  # Component spec
 │                   ├── Button.tsx
 │                   └── Button.types.ts
 ├── apps/

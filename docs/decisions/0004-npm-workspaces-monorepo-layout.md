@@ -1,9 +1,9 @@
 ---
 id: 0004
 title: Root is an npm workspace root; library lives in packages/eldrin-ui, docs/ joins the workspace
-status: proposed
+status: superseded
 date: 2026-08-23
-superseded_by:
+superseded_by: 0012
 ---
 
 # Context

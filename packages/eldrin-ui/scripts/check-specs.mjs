@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// Enforces that every component's <NAME>.md blueprint is actually
-// filled in, not left as the TODO stub CLAUDE.md's template produces.
-// See docs/decisions/0010-blueprint-completeness-lint.md for the
-// contract this script implements.
+// Enforces that every component's <NAME>.md spec is actually filled in,
+// not left as the TODO stub CLAUDE.md's template produces.
+// See docs/decisions/0011-spec-single-source-of-truth.md (why the spec is
+// authoritative and the required section list) and
+// docs/decisions/0010-blueprint-completeness-lint.md (the completeness
+// contract this script implements — carried over from the blueprint name).
 //
 // Usage:
-//   node scripts/check-blueprints.mjs
+//   node scripts/check-specs.mjs
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -18,9 +20,15 @@ const REQUIRED_SECTIONS = [
   'Intent',
   'Anatomy',
   'Variants',
+  'Sizes',
   'States',
   'Tokens used',
+  'Content guidelines',
   'Accessibility',
+  'Responsive behavior',
+  'Props',
+  "Do's and don'ts",
+  'Related components',
 ];
 
 function isUnwritten(text) {
@@ -28,7 +36,7 @@ function isUnwritten(text) {
   return trimmed.length === 0 || /\bTODO\b/.test(trimmed);
 }
 
-function checkBlueprint(dirName, filePath) {
+function checkSpec(dirName, filePath) {
   const issues = [];
   const content = readFileSync(filePath, 'utf8');
 
@@ -68,44 +76,44 @@ function checkBlueprint(dirName, filePath) {
   return issues;
 }
 
-function findBlueprints() {
+function findSpecs() {
   const found = [];
   for (const dirName of readdirSync(COMPONENTS_DIR)) {
     const dirPath = join(COMPONENTS_DIR, dirName);
     if (!statSync(dirPath).isDirectory()) continue;
-    const blueprintPath = join(dirPath, `${dirName.toUpperCase()}.md`);
+    const specPath = join(dirPath, `${dirName.toUpperCase()}.md`);
     try {
-      statSync(blueprintPath);
+      statSync(specPath);
     } catch {
-      found.push({ dirName, blueprintPath, missing: true });
+      found.push({ dirName, specPath, missing: true });
       continue;
     }
-    found.push({ dirName, blueprintPath, missing: false });
+    found.push({ dirName, specPath, missing: false });
   }
   return found;
 }
 
 function main() {
-  const blueprints = findBlueprints();
+  const specs = findSpecs();
   const results = [];
 
-  for (const bp of blueprints) {
-    if (bp.missing) {
-      results.push({ dirName: bp.dirName, issues: [`no ${bp.dirName.toUpperCase()}.md blueprint found`] });
+  for (const spec of specs) {
+    if (spec.missing) {
+      results.push({ dirName: spec.dirName, issues: [`no ${spec.dirName.toUpperCase()}.md spec found`] });
       continue;
     }
-    const issues = checkBlueprint(bp.dirName, bp.blueprintPath);
+    const issues = checkSpec(spec.dirName, spec.specPath);
     if (issues.length > 0) {
-      results.push({ dirName: bp.dirName, issues });
+      results.push({ dirName: spec.dirName, issues });
     }
   }
 
   if (results.length === 0) {
-    console.log(`check:blueprints: clean (${blueprints.length} blueprint(s) reviewed)`);
+    console.log(`check:specs: clean (${specs.length} spec(s) reviewed)`);
     return;
   }
 
-  console.log(`\n${results.length} of ${blueprints.length} blueprint(s) incomplete:\n`);
+  console.log(`\n${results.length} of ${specs.length} spec(s) incomplete:\n`);
   for (const r of results) {
     console.log(`  ${r.dirName}:`);
     for (const issue of r.issues) {

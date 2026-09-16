@@ -215,11 +215,11 @@ function buildVarRegistry(collections) {
 //   - components: pure aliases into the semantic layer (same "token
 //     layer order" entry). A component token's rationale — which
 //     semantic role it aliases and why — is already the specific job
-//     of that component's own <NAME>.md blueprint (CLAUDE.md/
+//     of that component's own <NAME>.md spec (CLAUDE.md/
 //     DESIGN.md's classification/rationale + "token usage"), and its
 //     accessibility properties are inherited from the semantic token
 //     it points to, not independent. Documenting it again here would
-//     just be a second copy that can drift from the blueprint.
+//     just be a second copy that can drift from the spec.
 const INTENT_EXCLUDED_COLLECTIONS = new Set(['primitives', 'scale', 'components']);
 
 // Every non-excluded token's stable Figma variableId -> the CSS var

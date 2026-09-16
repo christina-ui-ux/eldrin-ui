@@ -11,7 +11,7 @@
   "scripts": {
     "lint:glossary": "node scripts/lint-glossary.mjs",
     "tokens:build": "npm run tokens:build --workspace eldrin-ui",
-    "check:blueprints": "npm run check:blueprints --workspace eldrin-ui"
+    "check:specs": "npm run check:specs --workspace eldrin-ui"
   },
   "devDependencies": {
     "yaml": "^2.9.0"

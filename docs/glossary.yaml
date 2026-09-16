@@ -134,7 +134,7 @@ entries:
       Reuses the spacing scale instead of a second numeric scale needing
       its own steps kept in sync by hand. Split by container/control
       (mirroring "container / control" below) so a component's own
-      blueprint already tells you which value it should use. Same words
+      spec already tells you which value it should use. Same words
       `space.horizontal.control`/`.container` already reuse directly for
       the same distinction.
     status: decided
@@ -320,7 +320,7 @@ entries:
       `container` = accepts arbitrary child content (Card, Modal,
       Popover). `control` = atomic, self-contained element (Button,
       Badge). Recorded per-component in that component's own
-      `<NAME>.md` blueprint (`classification` + `rationale`
+      `<NAME>.md` spec (`classification` + `rationale`
       frontmatter) — no separate classification.yaml.
       Same distinction, reappearing elsewhere:
         - `intent.yaml`'s `classification` field on `surface`/`fill`

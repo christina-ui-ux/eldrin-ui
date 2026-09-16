@@ -15,13 +15,13 @@ holds up in practice.
 
 - **Stays in `apps/playground`**: anything specific to whatever is being
   prototyped — screen layouts, business logic, copy, one-off styling. This
-  code is disposable and is *not* held to the library's blueprint or
+  code is disposable and is *not* held to the library's spec or
   token-intent conventions; it's a consumer, not part of the system.
 - **Goes back to `packages/eldrin-ui`**: anything a prototype reveals
   that's actually about the design system itself — a missing token, a
   component variant that should exist, a classification that doesn't hold
   up under real use. That becomes a change to the library (an updated
-  blueprint, token, or — if it changes a *rule* other components follow —
+  spec, token, or — if it changes a *rule* other components follow —
   a new ADR, per the root `CLAUDE.md`'s process), not a local workaround
   left sitting in playground code.
 

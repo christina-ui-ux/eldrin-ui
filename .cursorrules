@@ -4,8 +4,10 @@ library built from scratch (no ShadCN).
 Every design token carries intent metadata (purpose, what it's not for,
 accessibility requirements) — see `packages/eldrin-ui/src/tokens/`.
 
-Every component is defined by a machine-readable blueprint before
-implementation: `packages/eldrin-ui/src/components/<Name>/<NAME>.md`. Read the blueprint before
-writing or modifying a component, and keep it in sync with the code.
+Every component is defined by a machine-readable spec before
+implementation: `packages/eldrin-ui/src/components/<Name>/<NAME>.md`. Read the spec before
+writing or modifying a component — the spec is upstream of both the code
+and the generated Figma component, so edit the spec first and regenerate
+rather than hand-editing the code or the Figma instance out of sync with it.
 
 See CLAUDE.md and DESIGN.md for full project context.

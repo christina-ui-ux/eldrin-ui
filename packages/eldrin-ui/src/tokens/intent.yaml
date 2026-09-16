@@ -16,10 +16,10 @@
 #     them, not tokens with a role of their own to document.
 #   - component tokens are pure aliases into the semantic layer; a
 #     component token's rationale (which semantic role it aliases and
-#     why) already lives in that component's own <NAME>.md blueprint,
+#     why) already lives in that component's own <NAME>.md spec,
 #     and its accessibility properties are inherited from the semantic
 #     token it points to — documenting it again here would just drift
-#     from the blueprint.
+#     from the spec.
 #
 # Fields per entry:
 #   token        CSS var name (e.g. "--bg-fill-primary"). Derived,
