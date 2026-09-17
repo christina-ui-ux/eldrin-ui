@@ -17,7 +17,10 @@ const config: StorybookConfig = {
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
     // Component stories live next to each component's spec (ADR 0011,
     // ADR 0012), not under docs/ — this is the single source outside
-    // docs/ that Storybook reads.
+    // docs/ that Storybook reads. Docs-page layout (header, tabs,
+    // Overview content) is applied globally from GlobalDocsContainer
+    // (docs/src/docs/), not per-component .mdx — a component only
+    // needs a `parameters.componentDocs` entry on its story's meta.
     '../../packages/eldrin-ui/src/components/**/*.stories.@(js|jsx|mjs|ts|tsx)',
   ],
   addons: [getAbsolutePath('@storybook/addon-a11y'), getAbsolutePath('@storybook/addon-docs')],

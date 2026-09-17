@@ -7,8 +7,17 @@ import { Button } from './Button';
 // Sizes/States/Props sections are filled in — a future generator target,
 // not hand-authored ahead of the spec (see ADR 0011, ADR 0012).
 const meta = {
-  title: 'Components/Button',
+  title: 'Actions/Button',
   component: Button,
+  // Drives GlobalDocsContainer's automatic header+tabs docs page (see
+  // docs/.storybook/preview.tsx) — componentPath both builds the
+  // header's GitHub Source link and locates BUTTON.md for the Overview
+  // tab's generated content.
+  parameters: {
+    componentDocs: {
+      componentPath: 'packages/eldrin-ui/src/components/Button/Button.tsx',
+    },
+  },
 } satisfies Meta<typeof Button>;
 
 export default meta;

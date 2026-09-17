@@ -6,6 +6,10 @@ on:
     paths:
       - 'docs/**'
       - 'packages/eldrin-ui/src/components/**/*.stories.*'
+      # Overview tab content is generated from each component's spec
+      # (GlobalDocsContainer, docs/src/docs/) — a spec edit alone (no
+      # .stories.tsx change) still needs to trigger a redeploy.
+      - 'packages/eldrin-ui/src/components/**/*.md'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 

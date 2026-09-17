@@ -54,16 +54,95 @@ current API.
   `packages/eldrin-ui/src/components/<Name>/<Name>.stories.tsx` — not
   under `docs/`. `docs/.storybook/main.ts`'s `stories` glob reads them
   from there directly. This mirrors ADR 0011's "spec is the single
-  source of truth, generated artifacts live with it" model, and sets up
-  a natural future direction — a generator producing
-  `<Name>.stories.tsx` from the spec's `Variants`/`Sizes`/`States`/`Props`
-  sections, the same not-yet-built-but-intended-shape caveat already
-  used for spec→Figma and spec→code in ADR 0011/0012. **Not built now**:
-  every current story is a single minimal `Default` story rendering the
-  bare component with no args, because every component's `.types.ts` is
-  still an empty `{}` interface and every component still renders
-  `null` — inventing variant/prop content ahead of the spec would just
-  be fabricated documentation.
+  source of truth, generated artifacts live with it" model. **Not built
+  now**: every current story is a single minimal `Default` story
+  rendering the bare component with no args, because every component's
+  `.types.ts` is still an empty `{}` interface and every component
+  still renders `null` — inventing variant/prop args ahead of the spec
+  would just be fabricated documentation. (The Overview tab's *prose*,
+  below, is a different story — that part of the spec→docs generator
+  is built.)
+- **Every component's docs page gets the same hand-built
+  Overview/Code/Changelog tab layout automatically, generated from that
+  component's own spec** — not a per-component `.mdx` file (an earlier
+  draft, described below, had one for Button; deleted once this
+  landed). `docs/.storybook/preview.tsx` sets
+  `parameters.docs.container` to `GlobalDocsContainer`
+  (`docs/src/docs/GlobalDocsContainer.tsx`, alongside `Glossary.tsx`/
+  `TokensColors.tsx` — this whole file group started life under
+  `packages/eldrin-ui/src/docs/` while `ComponentDocsHeader`/
+  `ComponentDocsTabs` were only consumed by `Button.mdx`; once
+  `Button.mdx` was deleted, nothing in `packages/eldrin-ui` referenced
+  them any more, so they moved to sit with the rest of the docs-site
+  tooling that already lived in `docs/src/docs/` — pure Storybook
+  tooling has no business inside the design-system package itself,
+  spotted and corrected the same session) — a documented,
+  version-verified Storybook extension point (confirmed against the
+  installed `@storybook/addon-docs` runtime, not assumed:
+  `docsParameter.container || DocsContainer`) that wraps *every* docs
+  page, autodocs or attached-MDX alike. A component opts in with one
+  parameter on its story's meta:
+  `parameters: { componentDocs: { componentPath: 'packages/eldrin-ui/src/components/Button/Button.tsx' } }`
+  — a plain string; `Button.stories.tsx` itself imports nothing
+  docs-related. `GlobalDocsContainer` reads the current docs entry's
+  primary story (`context.storyById()`) to get its title and
+  `moduleExport`; a docs page with no CSF file behind it
+  (Glossary/Introduction — unattached MDX) throws there and falls
+  through to normal rendering, untouched — same for Tokens/Colors,
+  which has a real story but no `componentDocs` parameter, since it
+  isn't a single component with a spec.
+  - **Header** (`ComponentDocsHeader.tsx`): component name, "Report an
+    issue" (`github.com/christina-ui-ux/eldrin-ui/issues/new`) and
+    `</> Source` (the component's real file on `main`, from
+    `componentPath`) — both built from the real `git remote` URL, not
+    invented. Has an `alerts?: ReactNode` slot below the title, reserved
+    per explicit direction for a future Alerts component (deprecation/
+    experimental notices, etc.) not built yet; renders nothing, at no
+    extra height, until a caller passes something in.
+  - **Overview tab** (`ComponentDocsOverview.tsx` +
+    `parseComponentSpec.ts`): a Demo (`<Canvas of={defaultStory} />`),
+    then one section per `<NAME>.md` heading that has real content —
+    Usage (the spec's `Intent`), `Do's and don'ts`, `Variants`,
+    `Sizes`, `States`, `Accessibility`, `Responsive behavior`,
+    `Related components` — read via
+    `import.meta.glob('../../../packages/eldrin-ui/src/components/*/*.md', …)`
+    and split into sections at each `## ` heading, matched to a
+    component's spec by deriving `<NAME>.md` from `componentPath`'s own
+    folder name. Section names and prose are the spec's own, verbatim
+    (author-facing HTML comments like `<!-- one bullet per state -->`
+    are stripped; those are instructions for whoever fills in the spec,
+    not content for a docs reader) — nothing invented, and a section
+    that's still empty just doesn't render. This replaces the
+    hand-written "TODO — see BUTTON.md's `X` section" pointer text an
+    earlier draft used in `Button.mdx`; now the actual TODO prose from
+    the spec shows up directly.
+  - **Code tab** (`ComponentDocsCode.tsx`): an import snippet
+    (`import { ${componentName} } from 'eldrin-ui';`) plus the
+    Properties table (`<Controls of={defaultStory} />` — the same
+    autodocs args table, just under its own tab).
+  - **Changelog tab**: still placeholder-only (`No per-component
+    changelog exists yet — see the repo's commit history.`) — no
+    per-component release tracking exists in this repo, so inventing
+    real content would be fabricated documentation.
+  - Tab *structure* (Overview/Code/Changelog, the header layout) was
+    adapted from reviewing another design system's Storybook — its
+    content/copy was not, per explicit direction. That reviewed
+    example's fourth tab, Testkit (a test-driver API for a testkit
+    library this repo has no equivalent of), was dropped rather than
+    kept as a placeholder — per explicit direction, since unlike a
+    changelog, no near-term testkit is even anticipated here. Its other
+    two header elements (a promo for their own AI-skills library, a
+    notice that their docs platform moved) are that system's own
+    product content and weren't reproduced either.
+- **Docs pages use the full panel width, not addon-docs' default
+  centered 1000px column.** `docs/.storybook/preview.css`
+  (`@storybook/addon-docs`'s own class, `.sbdocs-content`) overrides
+  its hard-coded `max-width: 1000px` to `none`. This was needed for the
+  header row above to actually reach the same edges the tabs and body
+  content already used — without it, `ComponentDocsHeader`'s
+  `width: 100%` only spanned the constrained column, not the page.
+  Applies to every docs page site-wide (ADRs read on GitHub aren't
+  affected — see above), not just ones with a `ComponentDocsHeader`.
 - **ADRs are not surfaced in Storybook at all.** An earlier draft of
   this ADR had a `Decisions.mdx`/`Decisions.tsx` page reading every
   ADR via `import.meta.glob`; that page is removed per explicit
@@ -88,7 +167,7 @@ current API.
     simply absent from the site, even though it's still enforced in
     `docs/glossary.yaml` — curation is a docs-presentation choice, not
     a change to what's a decided naming rule.
-  - `TokensColors.tsx` + `.stories.tsx`: ported `docs/src/pages/tokens/colors.astro`'s `extractBlocks`/`extractVars` regex logic verbatim (reads `packages/eldrin-ui/src/tokens/generated.css` via `?raw`, buckets primitives/semantics/components by value shape, renders swatch grids with light/dark primitive pairs). This one is a real Storybook *story* (interactive), not a docs-only page — it's component-shaped, unlike the ADR/glossary pages.
+  - `TokensColors.tsx` + `.stories.tsx`: ported `docs/src/pages/tokens/colors.astro`'s `extractBlocks`/`extractVars` regex logic (reads `packages/eldrin-ui/src/tokens/generated.css` via `?raw`, buckets primitives/semantics/components by value shape, renders swatch grids with light/dark primitive pairs). **Not** ported verbatim: the Astro page injected a synthesized `:root { ... }` stylesheet so component/semantic tokens' `var(--color-x)` values resolved to real colors — this docs bundle no longer runs Tailwind at all (see above), and `generated.css`'s `@theme { ... }` block is Tailwind v4 source, not standalone CSS, so an unprocessed `var()` never resolves in a plain `<style>` tag either. Fixed by resolving each token's reference chain by hand in JS (`resolveValue`, walking `var(--x)` → `var(--y)` → literal hex) instead of relying on any CSS cascade. This one is a real Storybook *story* (interactive), not a docs-only page — it's component-shaped, unlike the glossary page.
   - `Introduction.mdx`: static welcome content, ported from `docs/src/pages/core/introduction.md`. Cross-page links that used to need Astro's `withBase()` handling for the GitHub Pages subpath are gone — Storybook is a single-page app with its own sidebar navigation, not raw relative links between rendered markdown pages.
 - **Hosting stays GitHub Pages**, but the build step changes:
   `.github/workflows/deploy-docs.yml` now runs `npm install` (root) +
@@ -96,9 +175,13 @@ current API.
   of `withastro/action`, and uploads `docs/storybook-static` via
   `actions/upload-pages-artifact` instead of that action's built-in
   upload. The workflow's path filter gained
-  `packages/eldrin-ui/src/components/**/*.stories.*`, since component
-  stories now live outside `docs/**` and would otherwise never trigger a
-  deploy.
+  `packages/eldrin-ui/src/components/**/*.stories.*` (component
+  stories live outside `docs/**`) and
+  `packages/eldrin-ui/src/components/**/*.md` (Overview tab content is
+  generated from these at build time — a spec-only edit needs to
+  redeploy too, with no `.stories.tsx` change to otherwise trigger it).
+  `GlobalDocsContainer` and friends live under `docs/src/docs/`,
+  already covered by the plain `docs/**` pattern.
 - **Subpath hosting**: `docs/.storybook/main.ts`'s `viteFinal` sets
   `base: '/eldrin-ui/'` only when `NODE_ENV=production`, matching what
   `astro.config.mjs`'s `base` did — but only the *preview/iframe* build
@@ -107,9 +190,17 @@ current API.
   `index.html`, Storybook's manager/chrome shell, already emits
   relative `./...` asset paths regardless, unaffected by `viteFinal`
   since the manager is built separately from the user's Vite config).
+- **Autodocs is on project-wide**: `docs/.storybook/preview.tsx` sets
+  `tags: ['autodocs']`, so every story file's `meta.component` gets an
+  auto-generated docs page (props table from the component's
+  TypeScript types + JSDoc) with no MDX hand-authoring per component.
+  Currently sparse — every component's `.types.ts` is still an empty
+  `{}` interface — but the wiring is ready the moment a spec fills in
+  real props.
 - Trimmed the CLI's default addon set: kept `@storybook/addon-a11y`
   (fits CLAUDE.md's existing accessibility emphasis and ADR 0006) and
-  `@storybook/addon-docs` (required for the MDX docs pages above);
+  `@storybook/addon-docs` (required for autodocs and the MDX docs pages
+  above);
   dropped `@storybook/addon-vitest`, `@storybook/addon-mcp`,
   `@chromatic-com/storybook`, `vitest`, `playwright`, and the two
   `@vitest/*` packages the CLI installed by default — none of them do
@@ -139,6 +230,23 @@ current API.
   frontmatter is five flat `key: value` lines, not nested structure; a
   regex-based line parser is simpler than pulling in a YAML parser for
   a shape that doesn't need one.
+- **Plain autodocs, no tab navigation, for every component** — rejected
+  per explicit direction to match the reviewed example's tabbed layout.
+  Kept as the *fallback* for any component with no `componentDocs`
+  parameter on its story meta: it still gets a docs page (via
+  project-wide `tags: ['autodocs']`), just without tabs, so a component
+  isn't undocumented while it's not yet opted in.
+- **A per-component `.mdx` hand-wiring `ComponentDocsHeader` +
+  `ComponentDocsTabs`** — the first version of this (Button.mdx),
+  rejected once made global: it required every future component to
+  copy the same boilerplate, and hand-write Overview prose that would
+  just restate BUTTON.md's own TODO text, duplicating the single source
+  of truth ADR 0011 exists to avoid. Replaced by `GlobalDocsContainer`
+  reading `<NAME>.md` directly instead.
+- **Real Changelog content** (generated per-component release notes)
+  — out of scope: doesn't exist in this repo yet, and building it is
+  unrelated to a docs-page layout decision. The tab exists now so the
+  *shape* is ready; what it shows is a separate, later decision.
 - **Keep the CLI's default addon set as installed** (`addon-vitest` +
   `playwright` + `vitest` + `@chromatic-com/storybook` + `addon-mcp`) —
   rejected: those addons target interaction testing and visual-regression
@@ -152,11 +260,15 @@ current API.
 Easier: component stories now live where the spec-driven model already
 puts everything else about a component — one directory, not split
 across `packages/eldrin-ui/` and a separate `docs/` project. A future
-spec→story generator has a natural home to write into, alongside the
-spec→Figma and spec→code generators ADR 0011 already anticipates.
-Storybook's `addon-a11y` gives every future filled-in story a live
-accessibility check for free, which the old Astro site had no
-equivalent of.
+spec→story generator (real variant/prop stories) has a natural home to
+write into, alongside the spec→Figma and spec→code generators ADR 0011
+already anticipates — the spec→*docs-content* half of that is now
+built (`GlobalDocsContainer`), so a new component gets a fully laid-out
+docs page — header, tabs, Overview prose straight from its spec — for
+one parameter on its story meta, no per-component `.mdx` to write or
+keep in sync by hand. Storybook's `addon-a11y` gives every future
+filled-in story a live accessibility check for free, which the old
+Astro site had no equivalent of.
 
 Harder: the curated glossary needs manual upkeep — a term decided in
 `docs/glossary.yaml` doesn't appear on the public site until someone
@@ -165,11 +277,21 @@ to forget, and there's no lint checking the two stay related (unlike
 `docs/glossary.yaml` itself, which `lint:glossary` enforces). ADRs are
 no longer readable from the built docs site at all — anyone wanting
 decision history needs repo access (e.g. GitHub), not just the public
-Pages URL. The deploy workflow's path filter now spans
-two directories (`docs/**` and
-`packages/eldrin-ui/src/components/**/*.stories.*`) instead of one,
-which is one more place a future contributor could forget to update if
-stories move again. All five components still render `null` with empty
-prop types, so every current story is a placeholder with no controls —
-Storybook's actual value (live variant/prop exploration) doesn't
-materialize until specs and components catch up.
+Pages URL. The deploy workflow's path filter now spans three patterns
+(`docs/**`, `packages/eldrin-ui/src/components/**/*.stories.*`, and
+`packages/eldrin-ui/src/components/**/*.md`) instead of one, which is
+one more place a future contributor could forget to update if these
+move again.
+All five components still render `null` with empty prop types, so
+every current story is a placeholder with no controls — Storybook's
+actual value (live variant/prop exploration) doesn't materialize until
+specs and components catch up. The tabbed layout is opt-in per
+component (only Button sets `parameters.componentDocs` so far) — a
+component that hasn't opted in silently falls back to plain autodocs,
+so the docs site will have two visibly different page shapes side by
+side until every component adds the parameter. `GlobalDocsContainer`
+matches a component to its spec by convention alone (folder name
+uppercased + `.md`, e.g. `Button/` → `BUTTON.md`) with no validation —
+a renamed folder or spec file silently stops finding its spec (the
+Overview tab just shows Demo/Properties with no other sections) rather
+than erroring.

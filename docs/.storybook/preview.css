@@ -1,0 +1,48 @@
+/* Storybook's addon-docs hard-codes .sbdocs-content to max-width: 1000px,
+   centered — this caps every docs page (not just the header) well
+   short of the panel's actual width. Removing it here is the
+   documented override hook for this (a stable, addon-docs-owned
+   class), not a guess at internal markup. */
+.sbdocs-content {
+  max-width: none !important;
+}
+
+.sbdocs-wrapper {
+  padding: 0 !important;
+}
+
+.sbdocs-wrapper .content {
+  margin: 0 auto;
+  max-width: 1000px;
+}
+
+.sbdocs-wrapper .header {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 64px 0 0 0;
+  margin-bottom: 72px;
+}
+
+.sbdocs-content .header > div {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.sbdocs-content .header h1 {
+  margin-bottom: 24px !important;
+}
+
+.tablist {
+  display: flex;
+  gap: 4px;
+}
+
+.sbdocs-content .content h2 {
+  border-bottom: none !important;
+  margin: 24px 0;
+  font-size: 24px;
+  line-height: 1.6;
+}
+
+.sbdocs-content .content section {
+  margin-bottom: 56px;
+}

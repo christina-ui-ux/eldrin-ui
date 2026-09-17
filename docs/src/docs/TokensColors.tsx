@@ -8,6 +8,7 @@ import generatedCss from '../../../packages/eldrin-ui/src/tokens/generated.css?r
 interface VarEntry {
   name: string;
   value: string;
+  resolved: string;
   dark?: string;
 }
 
@@ -31,6 +32,27 @@ function extractVars(body: string): Map<string, string> {
   return vars;
 }
 
+// generated.css's `@theme { ... }` block is Tailwind v4 source, not
+// standalone CSS — an unprocessed `var(--x)` reference in a component
+// token never resolves to a color in this docs bundle, which drops
+// Tailwind processing entirely (ADR 0012). Follow the reference chain
+// by hand instead, down to the literal hex value each token ultimately
+// aliases.
+function resolveValue(rawValue: string, vars: Map<string, string>): string {
+  let value = rawValue;
+  const seen = new Set<string>();
+  while (true) {
+    const match = /^var\((--[\w-]+)\)$/.exec(value.trim());
+    if (!match) return value;
+    const varName = match[1];
+    if (seen.has(varName)) return value;
+    seen.add(varName);
+    const next = vars.get(varName);
+    if (next === undefined) return value;
+    value = next;
+  }
+}
+
 function buildTokenGroups(css: string) {
   const blocks = extractBlocks(css);
   const themeBlock = blocks.find((b) => b.selector === '@theme');
@@ -47,12 +69,19 @@ function buildTokenGroups(css: string) {
   const components: VarEntry[] = [];
 
   for (const [name, value] of themeVars) {
+    const resolved = resolveValue(value, themeVars);
     if (name.startsWith('--color-')) {
-      primitives.push({ name, value, dark: darkOverride?.vars.get(name) });
+      const darkRaw = darkOverride?.vars.get(name);
+      primitives.push({
+        name,
+        value,
+        resolved,
+        dark: darkRaw ? resolveValue(darkRaw, themeVars) : undefined,
+      });
     } else if (/^var\(--color-/.test(value)) {
-      semantics.push({ name, value });
+      semantics.push({ name, value, resolved });
     } else if (/^var\(--/.test(value)) {
-      components.push({ name, value });
+      components.push({ name, value, resolved });
     }
   }
 
@@ -60,11 +89,11 @@ function buildTokenGroups(css: string) {
 }
 
 function Swatch({ token }: { token: VarEntry }) {
-  const hasDark = token.dark && token.dark !== token.value;
+  const hasDark = token.dark && token.dark !== token.resolved;
   return (
     <div style={{ overflow: 'hidden', borderRadius: 8, border: '1px solid #e2e8f0' }}>
       <div style={{ display: 'flex', height: 64 }}>
-        <div style={{ flex: 1, background: `var(${token.name})` }} />
+        <div style={{ flex: 1, background: token.resolved }} />
         {hasDark && (
           <div style={{ flex: 1, background: token.dark }} />
         )}

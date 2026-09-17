@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TokenColors } from './TokensColors';
 
 const meta = {
-  title: 'Tokens/Colors',
+  title: 'Foundation/Tokens',
   component: TokenColors,
   parameters: {
     layout: 'padded',
