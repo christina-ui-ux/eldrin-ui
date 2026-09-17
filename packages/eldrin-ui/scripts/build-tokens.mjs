@@ -1,553 +1,277 @@
 #!/usr/bin/env node
-// Generates Tailwind v4 @theme CSS from Figma's native variable export
-// format (W3C DTCG design tokens + a `com.figma.*` $extensions block).
-// See docs/decisions/0008-figma-token-import-pipeline.md for the
-// pipeline this implements.
+// Generates Tailwind v4 @theme CSS from hand-authored token source in
+// Tokens Studio's folder-mode shape ($metadata.json + $themes.json +
+// one JSON file per set) in tokens-source/. Code is the single source
+// of truth here — Tokens Studio's Git sync only ever Pulls this into
+// Figma, never pushes into this repo. See
+// docs/decisions/0013-tokens-studio-replaces-figma-native-import.md.
 //
 // Usage:
 //   node scripts/build-tokens.mjs
 //
-// Drop exported .json files into tokens-source/. Files that are
-// different Figma *modes* of the same variable collection (e.g.
-// scale-large.tokens.json + scale-medium.tokens.json) are detected via
-// each file's own `$extensions.com.figma.modeName` and merged into one
-// collection with mode-scoped CSS overrides.
+// Each of the three themes declared in tokens-source/$themes.json
+// (light-medium/dark/large) is resolved independently to a flat token
+// tree via Style Dictionary + @tokens-studio/sd-transforms — multi-set
+// merging and {a.b.c} reference resolution reuse that maintained
+// toolchain rather than a hand-rolled parser (ADR 0013's explicit
+// reason for replacing the old Figma-export build-tokens.mjs).
 //
-// Figma's exporter bakes every alias's resolved literal directly into
-// `$value`, and separately records the source relationship in
-// `$extensions.com.figma.aliasData` (targetVariableName/
-// targetVariableSetName). This script prefers that relationship over
-// the baked literal — an aliased token is emitted as `var(--target)`,
-// not a copy of the value — so the primitive -> semantic -> component
-// chain (see docs/glossary.yaml's "token layer order" entry) stays real
-// CSS variable indirection, not flattened duplicates.
+// light-medium is the default (unscoped) theme; dark/large are each
+// diffed against it and only the CSS vars whose value actually differs
+// are emitted into their override block. A semantic/component token
+// that aliases another token is emitted as var(--target), not a copy
+// of the resolved value, so it's never part of either diff — only the
+// primitive/scale leaf values a theme actually swaps ever show up in
+// [data-primitives="dark"] / [data-scale="large"].
 //
-// This script only supports what tokens-source/ has actually contained
-// so far: numbers, strings, DTCG `color` values, and aliases carried
-// via `com.figma.aliasData`. It fails loudly (rather than guessing) on
-// shapes it doesn't handle yet.
+// A semantic token's intent (usage/notFor/status/pairsWith) is
+// hand-authored inline in its own entry in tokens-source/semantic.json
+// — $description holds usage, $extensions["com.eldrin-ui.intent"]
+// holds the rest. See docs/decisions/0015-token-intent-inline-in-source.md.
+// This script only reads and validates that block; it never writes
+// back into tokens-source/.
 
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
-import { join, basename, relative } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { basename, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Document, parseDocument } from 'yaml';
+import { register } from '@tokens-studio/sd-transforms';
+import StyleDictionary from 'style-dictionary';
 
 const PACKAGE_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SOURCE_DIR = join(PACKAGE_ROOT, 'tokens-source');
 const OUTPUT_PATH = join(PACKAGE_ROOT, 'src', 'tokens', 'generated.css');
-const INTENT_PATH = join(PACKAGE_ROOT, 'src', 'tokens', 'intent.yaml');
 
-// Top-level token group name -> Tailwind @theme namespace it maps to.
-// Extend this when a new top-level group shows up in tokens-source/.
-const NAMESPACES = {
-  space: 'spacing',
+register(StyleDictionary);
+
+// Every tokens-source/ set's generic collection, for CSS namespace
+// purposes — extend this whenever a new set is added (same
+// register-it-by-hand convention ADR 0008/0009 already accepted for
+// DEFAULT_MODE/COLLECTION_PREFIX).
+const SET_COLLECTION = {
+  'primitives-light': 'primitives',
+  'primitives-dark': 'primitives',
+  'scale-medium': 'scale',
+  'scale-large': 'scale',
+  semantic: 'semantic',
+  component: 'component',
 };
 
-// Unit appended to bare numeric values, keyed by the CSS namespace
-// (not the source group name) — Figma exports FLOAT variables as
-// unitless numbers, so the pipeline has to know which namespaces are
-// pixel dimensions.
-const UNITS = {
-  spacing: 'px',
-};
+// Collections whose paths need a namespace prefix before CSS var
+// naming — primitives' top-level group is a palette name ("seagull"),
+// not "color", so every primitives path is prefixed before namespace
+// resolution: "seagull.300" -> "color.seagull.300" -> "--color-seagull-300".
+// semantic/component/scale group names are already descriptive.
+const COLLECTION_PREFIX = { primitives: 'color' };
 
-// Some collections group tokens under a name that doesn't say what
-// they are (primitives-light/dark's top-level group is a palette name
-// like "seagull", not "color"). This prefixes every token path in that
-// collection before namespace resolution, so `seagull.300` becomes
-// `color.seagull.300` -> `--color-seagull-300`. Collections whose own
-// group names are already descriptive (semantics' `bg.fill.primary`,
-// components' `button.primary.background`) need no entry here.
-const COLLECTION_PREFIX = {
-  primitives: 'color',
-};
+// Top-level path group -> Tailwind @theme namespace, for groups whose
+// source name doesn't match the CSS namespace directly.
+const NAMESPACES = { space: 'spacing' };
 
-// Collections with more than one Figma mode MUST declare their default
-// (unscoped) mode here — see docs/decisions/0007 for why `scale`
-// defaults to `medium`, and docs/decisions/0008 for why `primitives`
-// defaults to `light`. Add an entry whenever a new multi-mode
-// collection lands in tokens-source/.
-const DEFAULT_MODE = {
-  scale: 'medium',
-  primitives: 'light',
+// Unit appended to a bare number, keyed by the CSS namespace (scale
+// tokens are unitless numbers in tokens-source/).
+const UNITS = { spacing: 'px' };
+
+// The only set whose tokens carry intent — primitives/scale are raw
+// values consumed by the layers above them, component is a pure alias
+// into semantic (see docs/glossary.yaml's "token layer order" entry).
+const INTENT_TRACKED_SET = 'semantic';
+const INTENT_EXTENSION_KEY = 'com.eldrin-ui.intent';
+const INTENT_STATUSES = new Set(['stable', 'experimental', 'deprecated']);
+
+const DEFAULT_THEME = 'light-medium';
+const OVERRIDE_SELECTORS = {
+  dark: '[data-primitives="dark"]',
+  large: '[data-scale="large"]',
 };
 
 const GENERATED_HEADER = `/* AUTO-GENERATED by scripts/build-tokens.mjs — do not edit by hand.
- * Source: tokens-source/*.json (Figma variable export)
+ * Source: tokens-source/ (Tokens Studio folder-mode JSON — see ADR 0013)
  * Regenerate: npm run tokens:build
  */
 `;
 
-// Cosmetic only — CSS custom properties resolve var() references at
-// used-value time, not declaration order, so this doesn't affect
-// correctness. Ordered to read primitive -> semantic -> component (see
-// docs/glossary.yaml's "token layer order" entry), with unrelated axes
-// (scale) last. Anything not listed here is appended after, in the
-// order it was first encountered in tokens-source/.
-const COLLECTION_ORDER = ['primitives', 'semantics', 'components', 'scale'];
-
-function isLeaf(node) {
-  return node && typeof node === 'object' && '$value' in node;
+function loadThemes() {
+  const metadata = JSON.parse(readFileSync(join(SOURCE_DIR, '$metadata.json'), 'utf8'));
+  const themes = JSON.parse(readFileSync(join(SOURCE_DIR, '$themes.json'), 'utf8'));
+  return { setOrder: metadata.tokenSetOrder, themes };
 }
 
-function walk(node, path, out) {
-  for (const [key, child] of Object.entries(node)) {
-    if (key.startsWith('$')) continue;
-    const nextPath = [...path, key];
-    if (isLeaf(child)) {
-      out.set(nextPath.join('.'), {
-        type: child.$type,
-        value: child.$value,
-        aliasData: child.$extensions?.['com.figma.aliasData'] ?? null,
-        variableId: child.$extensions?.['com.figma.variableId'] ?? null,
-      });
-    } else if (child && typeof child === 'object') {
-      walk(child, nextPath, out);
-    }
-  }
-  return out;
+function activeSets(theme, setOrder) {
+  return setOrder.filter((set) => theme.selectedTokenSets[set] === 'enabled');
 }
 
-function loadFile(file) {
-  const json = JSON.parse(readFileSync(file, 'utf8'));
-  const modeName = json.$extensions?.['com.figma.modeName'] ?? null;
-  return { tokens: walk(json, [], new Map()), modeName };
+function collectionOf(setName) {
+  const name = SET_COLLECTION[setName];
+  if (!name) {
+    throw new Error(`Set "${setName}" has no SET_COLLECTION entry — add one in build-tokens.mjs.`);
+  }
+  return name;
 }
 
-// scale-large.tokens.json -> collection "scale", mode "large" — the
-// mode comes from the file's own $extensions.com.figma.modeName, the
-// filename suffix is just expected to agree with it, never trusted on
-// its own.
-//
-// Figma normally exports a mode's bare name ("large"), which is what
-// lets us strip it off the filename above. But when two collections
-// share a mode name, Figma instead qualifies it with the collection
-// name ("scale-large") — the same shape as the filename itself, so the
-// bare-suffix strip no longer matches. Recognize that qualified form by
-// checking it against every collection name already registered in
-// DEFAULT_MODE (every multi-mode collection has to be registered there
-// regardless), and recover the bare mode key from it too — otherwise
-// DEFAULT_MODE's bare mode names (e.g. "light") would never match.
-function parseCollectionAndMode(fileBase, modeName) {
-  if (!modeName) return { collectionName: fileBase, modeKey: '__default__' };
-
-  if (fileBase.endsWith(`-${modeName}`)) {
-    return { collectionName: fileBase.slice(0, -(modeName.length + 1)), modeKey: modeName };
-  }
-
-  for (const collectionName of Object.keys(DEFAULT_MODE)) {
-    if (fileBase === modeName && modeName.startsWith(`${collectionName}-`)) {
-      return { collectionName, modeKey: modeName.slice(collectionName.length + 1) };
-    }
-  }
-
-  return { collectionName: fileBase, modeKey: modeName };
+function cssVarName(path, setName) {
+  const prefix = COLLECTION_PREFIX[collectionOf(setName)];
+  const [group, ...rest] = prefix ? [prefix, ...path] : path;
+  const namespace = NAMESPACES[group] ?? group;
+  return `--${namespace}-${rest.join('-')}`;
 }
 
-function applyCollectionPrefix(tokens, collectionName) {
-  const prefix = COLLECTION_PREFIX[collectionName];
-  if (!prefix) return tokens;
-  const prefixed = new Map();
-  for (const [path, entry] of tokens) {
-    prefixed.set(`${prefix}.${path}`, entry);
-  }
-  return prefixed;
+function isAlias(token) {
+  return typeof token.original.$value === 'string' && /^\{.*\}$/.test(token.original.$value);
 }
 
-function loadCollections() {
-  const files = readdirSync(SOURCE_DIR).filter((f) => f.endsWith('.json'));
-  if (files.length === 0) {
-    throw new Error(`No .json files found in ${relative(PACKAGE_ROOT, SOURCE_DIR)}/`);
-  }
-
-  const collections = new Map(); // collectionName -> Map<modeKey, tokenMap>
-  for (const file of files) {
-    const fileBase = basename(file).replace(/\.tokens\.json$|\.json$/, '');
-    const { tokens, modeName } = loadFile(join(SOURCE_DIR, file));
-    const { collectionName, modeKey } = parseCollectionAndMode(fileBase, modeName);
-
-    if (!collections.has(collectionName)) collections.set(collectionName, new Map());
-    const modes = collections.get(collectionName);
-    if (modes.has(modeKey)) {
+function formatLiteral(token, varName) {
+  const { $type } = token;
+  const raw = token.original.$value;
+  if ($type === 'color') {
+    if (typeof raw !== 'string') {
       throw new Error(
-        `Collection "${collectionName}" has two files claiming mode "${modeKey}" — check tokens-source/${file}`
+        `Token "${token.path.join('.')}" has a $type "color" value that isn't a string: ${JSON.stringify(raw)}`
       );
     }
-    modes.set(modeKey, applyCollectionPrefix(tokens, collectionName));
+    return raw;
   }
-  return collections;
+  if ($type === 'number') {
+    const namespace = varName.slice(2).split('-')[0];
+    return `${raw}${UNITS[namespace] ?? ''}`;
+  }
+  throw new Error(
+    `Token "${token.path.join('.')}" has an unsupported $type "${$type}". ` +
+      `Extend build-tokens.mjs's formatLiteral() to handle it.`
+  );
 }
 
-function orderedCollections(collections) {
-  const known = COLLECTION_ORDER.filter((name) => collections.has(name));
-  const rest = [...collections.keys()].filter((name) => !COLLECTION_ORDER.includes(name));
-  return [...known, ...rest].map((name) => [name, collections.get(name)]);
-}
+// Resolves one theme (a list of active sets) to a Map<varName, cssValue>,
+// via Style Dictionary + the tokens-studio preprocessor for multi-set
+// merge and {a.b.c} reference resolution — not a copy of the resolved
+// literal for an alias, but var(--target) indirection, computed from
+// the source $value (still "{a.b.c}" pre-resolution) rather than the
+// preprocessor's own flattened $value.
+async function resolveTheme(setNames) {
+  const sourceFiles = setNames.map((name) => join(SOURCE_DIR, `${name}.json`));
+  const sd = new StyleDictionary({
+    source: sourceFiles,
+    preprocessors: ['tokens-studio'],
+    platforms: { css: { transformGroup: 'tokens-studio' } },
+  });
+  const dictionary = await sd.getPlatformTokens('css');
 
-function cssVarName(path) {
-  const [group, ...rest] = path.split('.');
-  const namespace = NAMESPACES[group] ?? group;
-  return { namespace, varName: `--${namespace}-${rest.join('-')}` };
-}
-
-// Every var name any collection/mode will emit, used to catch an alias
-// pointing at a token that doesn't exist (renamed/missing source).
-function buildVarRegistry(collections) {
-  const registry = new Set();
-  for (const modes of collections.values()) {
-    for (const tokens of modes.values()) {
-      for (const path of tokens.keys()) {
-        registry.add(cssVarName(path).varName);
-      }
+  const knownSets = new Set(setNames);
+  const resolved = dictionary.allTokens.map((token) => {
+    const setName = basename(token.filePath, '.json');
+    if (!knownSets.has(setName)) {
+      throw new Error(`Token "${token.path.join('.')}" came from an unexpected file "${token.filePath}".`);
     }
-  }
-  return registry;
-}
+    return { token, setName, rawPath: token.path.join('.'), varName: cssVarName(token.path, setName) };
+  });
 
-// Collections with no intent of their own to document in intent.yaml —
-// intent.yaml never gets an entry for these; any that already exist
-// are actively removed on the next tokens:build. Two different reasons
-// land a collection here:
-//   - primitives/scale: raw values consumed by the semantic/component
-//     layers above them, not tokens that carry a role/meaning in their
-//     own right (see docs/glossary.yaml's "token layer order" entry:
-//     "primitives are raw values, owned separately").
-//   - components: pure aliases into the semantic layer (same "token
-//     layer order" entry). A component token's rationale — which
-//     semantic role it aliases and why — is already the specific job
-//     of that component's own <NAME>.md spec (CLAUDE.md/
-//     DESIGN.md's classification/rationale + "token usage"), and its
-//     accessibility properties are inherited from the semantic token
-//     it points to, not independent. Documenting it again here would
-//     just be a second copy that can drift from the spec.
-const INTENT_EXCLUDED_COLLECTIONS = new Set(['primitives', 'scale', 'components']);
+  const varNameByRawPath = new Map(resolved.map((r) => [r.rawPath, r.varName]));
 
-// Every non-excluded token's stable Figma variableId -> the CSS var
-// name/path it currently resolves to, plus the variableIds of tokens
-// in an excluded collection (kept separately so a leftover intent.yaml
-// entry for one can be told apart from a genuinely orphaned entry —
-// see docs/decisions/0009-token-intent-metadata.md). variableId
-// survives a Figma-side rename, so it's the key; varName/path are
-// labels kept in sync for humans, not the lookup key itself.
-function buildIdRegistry(collections) {
-  const registry = new Map();
-  const excludedIds = new Set();
-  for (const [collectionName, modes] of collections) {
-    const excluded = INTENT_EXCLUDED_COLLECTIONS.has(collectionName);
-    for (const tokens of modes.values()) {
-      for (const [path, entry] of tokens) {
-        if (!entry.variableId) continue;
-        if (excluded) {
-          excludedIds.add(entry.variableId);
-          continue;
-        }
-        const { varName } = cssVarName(path);
-        registry.set(entry.variableId, { varName, path });
-      }
-    }
-  }
-  return { registry, excludedIds };
-}
-
-const INTENT_STATUSES = new Set(['stable', 'experimental', 'deprecated']);
-
-function loadIntentDoc() {
-  if (!existsSync(INTENT_PATH)) {
-    return new Document({ version: 1, tokens: {} });
-  }
-  const doc = parseDocument(readFileSync(INTENT_PATH, 'utf8'));
-  if (!doc.hasIn(['tokens'])) doc.setIn(['tokens'], {});
-  return doc;
-}
-
-// `role` is derived from the token's dot-path, not hand-authored — it
-// mirrors docs/glossary.yaml's semantic token naming formula
-// (`{element}.{family}.{concept}.{state}.{context}`, element in
-// bg/text/border/icon, family in surface/fill, family only present
-// when element is `bg`). For a `bg.*` token the family segment is the
-// more specific structural tag, so role is that; for text/border/icon
-// tokens (no family segment) role is the element itself.
-function deriveRole(path) {
-  const [first, second] = path.split('.');
-  return first === 'bg' ? second : first;
-}
-
-// Mirrors docs/glossary.yaml's "container / control" entry (component
-// classification) back onto the surface/fill structural axis it's
-// built on: surface = background for container components, fill =
-// background for atomic control components. Only meaningful for a
-// `role` that's actually surface/fill (bg-element tokens) — a
-// text/border/icon token has no surface/fill family segment to derive
-// this from, so it stays null.
-function deriveClassification(role) {
-  if (role === 'surface') return 'container';
-  if (role === 'fill') return 'control';
-  return null;
-}
-
-// Adds a stub entry for any (non-excluded) token intent.yaml doesn't
-// know about yet, and keeps each existing entry's derived `token`/
-// `path`/`role` labels in sync with the current export (the
-// variableId itself never changes on rename). Never overwrites
-// status/usage/notFor/pairsWith/deprecated a human already filled in.
-// A `status: deprecated` entry missing `deprecated.replacement` gets
-// that key stubbed in (or flagged, if already present but empty) so a
-// deprecated token can't silently ship with no documented successor.
-// An entry belonging to an excluded collection (primitives/scale/
-// components) is removed outright — those never get intent. An entry
-// that's neither tracked nor excluded (its variableId no longer
-// appears in tokens-source/ at all) is reported as orphaned instead,
-// left for a human to remove.
-function reconcileIntent(doc, idRegistry, excludedIds) {
-  const added = [];
-  const relabeled = [];
-  const removed = [];
-  const stubbed = [];
-  const missingReplacement = [];
-  const seen = new Set();
-
-  for (const [variableId, { varName, path }] of idRegistry) {
-    seen.add(variableId);
-    const role = deriveRole(path);
-    const classification = deriveClassification(role);
-
-    if (!doc.hasIn(['tokens', variableId])) {
-      doc.setIn(['tokens', variableId], {
-        token: varName,
-        path,
-        role,
-        classification,
-        status: 'experimental',
-        usage: null,
-        notFor: null,
-        pairsWith: [],
-      });
-      added.push(varName);
-    } else {
-      const labels = { token: varName, path, role, classification };
-      const changes = [];
-      for (const [key, value] of Object.entries(labels)) {
-        if (doc.getIn(['tokens', variableId, key]) !== value) {
-          doc.setIn(['tokens', variableId, key], value);
-          changes.push(key);
-        }
-      }
-      if (changes.length > 0) relabeled.push({ token: varName, fields: changes });
-
-      const status = doc.getIn(['tokens', variableId, 'status']);
-      if (status != null && !INTENT_STATUSES.has(status)) {
+  const entries = new Map();
+  for (const { token, rawPath, varName } of resolved) {
+    if (isAlias(token)) {
+      const targetPath = token.original.$value.slice(1, -1);
+      const targetVarName = varNameByRawPath.get(targetPath);
+      if (!targetVarName) {
         throw new Error(
-          `intent.yaml entry "${varName}" (${variableId}) has status "${status}" — must be one of ` +
-            `${[...INTENT_STATUSES].join('/')}.`
+          `Token "${rawPath}" aliases "${targetPath}", which doesn't resolve to any token active in this ` +
+            `theme (${setNames.join(', ')}) — check tokens-source/ for a missing or renamed source token.`
         );
       }
-    }
-
-    const status = doc.getIn(['tokens', variableId, 'status']);
-    if (status === 'deprecated') {
-      if (!doc.hasIn(['tokens', variableId, 'deprecated'])) {
-        doc.setIn(['tokens', variableId, 'deprecated'], { replacement: null });
-        stubbed.push(varName);
-      }
-      if (!doc.getIn(['tokens', variableId, 'deprecated', 'replacement'])) {
-        missingReplacement.push(varName);
-      }
+      entries.set(varName, `var(${targetVarName})`);
+    } else {
+      entries.set(varName, formatLiteral(token, varName));
     }
   }
+  return { entries, resolved };
+}
 
-  const orphaned = [];
-  const tokensJson = doc.get('tokens')?.toJSON?.() ?? {};
-  for (const variableId of Object.keys(tokensJson)) {
-    if (seen.has(variableId)) continue;
-    if (excludedIds.has(variableId)) {
-      removed.push(tokensJson[variableId]?.token ?? variableId);
-      doc.deleteIn(['tokens', variableId]);
-      continue;
-    }
-    orphaned.push(tokensJson[variableId]?.token ?? variableId);
+function generateCss(themeEntries, orderedVarNames) {
+  const defaultEntries = themeEntries.get(DEFAULT_THEME);
+  const lines = [GENERATED_HEADER, '@theme {'];
+  for (const varName of orderedVarNames) {
+    lines.push(`  ${varName}: ${defaultEntries.get(varName)};`);
   }
+  lines.push('}');
 
-  return { added, relabeled, removed, stubbed, missingReplacement, orphaned };
+  for (const [themeId, selector] of Object.entries(OVERRIDE_SELECTORS)) {
+    const entries = themeEntries.get(themeId);
+    const overrideLines = orderedVarNames
+      .filter((varName) => entries.get(varName) !== defaultEntries.get(varName))
+      .map((varName) => `  ${varName}: ${entries.get(varName)};`);
+    if (overrideLines.length === 0) continue;
+    lines.push('', `${selector} {`, ...overrideLines, '}');
+  }
+  return lines.join('\n') + '\n';
 }
 
-function writeIntentIfChanged(doc, { added, relabeled, removed, stubbed }) {
-  if (added.length === 0 && relabeled.length === 0 && removed.length === 0 && stubbed.length === 0) return false;
-  writeFileSync(INTENT_PATH, String(doc), 'utf8');
-  return true;
-}
-
-// Hard gate: every tracked (non-excluded) token must be reviewed before
-// tokens:build passes. "Reviewed" means status isn't the just-stubbed
-// default (experimental), a stable token has usage/notFor actually
-// written (not just a status flip with the fields left null), and a
-// deprecated token names its replacement. This runs after the file is
-// written, so a failure still leaves the stub/flagged entry on disk,
-// ready to edit — the build fails loudly, but doesn't hide what to fix.
-// `pairsWith` is deliberately not part of this gate — not every token
-// has a meaningful accessibility pairing, so it's left optional for now.
-function collectReviewIssues(doc, idRegistry) {
+// ---- intent validation ----
+// Intent lives inline on each semantic token in tokens-source/semantic.json
+// ($description for usage, $extensions["com.eldrin-ui.intent"] for
+// status/notFor/pairsWith/deprecated) — see ADR 0015. Nothing here is
+// written back to tokens-source/; a semantic token with no intent block
+// at all is treated as the implicit "experimental" (not yet reviewed)
+// default, same as ADR 0009's stub used to be before a human filled it in.
+function collectIntentIssues(resolved) {
   const issues = [];
-  for (const variableId of idRegistry.keys()) {
-    const token = doc.getIn(['tokens', variableId, 'token']);
-    const status = doc.getIn(['tokens', variableId, 'status']);
-    const usage = doc.getIn(['tokens', variableId, 'usage']);
-    const notFor = doc.getIn(['tokens', variableId, 'notFor']);
+  for (const { token, setName, rawPath } of resolved) {
+    if (collectionOf(setName) !== INTENT_TRACKED_SET) continue;
+
+    const intent = token.original.$extensions?.[INTENT_EXTENSION_KEY] ?? {};
+    const usage = token.original.$description;
+    const { status = 'experimental', notFor, deprecated } = intent;
+
+    if (!INTENT_STATUSES.has(status)) {
+      throw new Error(
+        `Token "${rawPath}" has $extensions["${INTENT_EXTENSION_KEY}"].status "${status}" — must be one of ` +
+          `${[...INTENT_STATUSES].join('/')}.`
+      );
+    }
 
     if (status === 'experimental') {
-      issues.push(`${token}: status is "experimental" — not yet reviewed. Fill in usage/notFor and set status to "stable" (or "deprecated").`);
+      issues.push(
+        `${rawPath}: status is "experimental" (or missing) — not yet reviewed. Fill in $description/notFor ` +
+          `and set status to "stable" (or "deprecated") in tokens-source/semantic.json.`
+      );
     } else if (status === 'stable' && (!usage || !notFor)) {
-      issues.push(`${token}: status is "stable" but usage/notFor is empty — fill both in before marking stable.`);
-    } else if (status === 'deprecated' && !doc.getIn(['tokens', variableId, 'deprecated', 'replacement'])) {
-      issues.push(`${token}: status is "deprecated" but deprecated.replacement is empty.`);
+      issues.push(`${rawPath}: status is "stable" but $description/notFor is empty — fill both in before marking stable.`);
+    } else if (status === 'deprecated' && !deprecated?.replacement) {
+      issues.push(`${rawPath}: status is "deprecated" but deprecated.replacement is empty.`);
     }
   }
   return issues;
 }
 
-function aliasTargetVarName(aliasData) {
-  const rawPath = aliasData.targetVariableName.split('/').join('.');
-  const prefix = COLLECTION_PREFIX[aliasData.targetVariableSetName];
-  const fullPath = prefix ? `${prefix}.${rawPath}` : rawPath;
-  return cssVarName(fullPath).varName;
-}
+async function main() {
+  const { setOrder, themes } = loadThemes();
 
-function formatColor(value, path) {
-  if (typeof value !== 'object' || value === null || !Array.isArray(value.components)) {
-    throw new Error(`Token "${path}" has a $type "color" value that isn't shaped as expected: ${JSON.stringify(value)}`);
+  const themeEntries = new Map();
+  let defaultResolved = null;
+  for (const theme of themes) {
+    const setNames = activeSets(theme, setOrder);
+    const { entries, resolved } = await resolveTheme(setNames);
+    themeEntries.set(theme.id, entries);
+    if (theme.id === DEFAULT_THEME) defaultResolved = resolved;
   }
-  if (value.alpha === 1 && typeof value.hex === 'string') {
-    return value.hex;
-  }
-  const [r, g, b] = value.components.map((c) => Math.round(c * 255));
-  return `rgba(${r}, ${g}, ${b}, ${value.alpha})`;
-}
-
-function formatValue(entry, namespace, path) {
-  const { value, type } = entry;
-  if (typeof value === 'string' && /^\{.*\}$/.test(value)) {
-    throw new Error(
-      `Token "${path}" is a DTCG alias string ("${value}") — this pipeline only resolves aliases via ` +
-        `$extensions.com.figma.aliasData, not the {a.b.c} syntax. Extend build-tokens.mjs if this shape shows up.`
-    );
-  }
-  if (type === 'color') {
-    return formatColor(value, path);
-  }
-  if (typeof value === 'number') {
-    return `${value}${UNITS[namespace] ?? ''}`;
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  throw new Error(
-    `Token "${path}" has an unsupported $type "${type}" (value: ${JSON.stringify(value)}). ` +
-      `Extend build-tokens.mjs's formatValue() to handle it.`
-  );
-}
-
-function emitTokenLines(tokens, registry) {
-  const lines = [];
-  for (const [path, entry] of tokens) {
-    const { namespace, varName } = cssVarName(path);
-    let cssValue;
-    if (entry.aliasData) {
-      const targetVarName = aliasTargetVarName(entry.aliasData);
-      if (!registry.has(targetVarName)) {
-        throw new Error(
-          `Token "${path}" aliases "${entry.aliasData.targetVariableName}" in collection ` +
-            `"${entry.aliasData.targetVariableSetName}", which resolves to unknown var "${targetVarName}" — ` +
-            `check tokens-source/ for a missing or renamed source token.`
-        );
-      }
-      cssValue = `var(${targetVarName})`;
-    } else {
-      cssValue = formatValue(entry, namespace, path);
-    }
-    lines.push(`  ${varName}: ${cssValue};`);
-  }
-  return lines;
-}
-
-function generateCss(collections) {
-  const registry = buildVarRegistry(collections);
-  const themeLines = [];
-  const overrideBlocks = [];
-
-  for (const [collectionName, modes] of orderedCollections(collections)) {
-    const modeKeys = [...modes.keys()];
-
-    if (modeKeys.length === 1) {
-      themeLines.push(...emitTokenLines(modes.get(modeKeys[0]), registry));
-      continue;
-    }
-
-    const defaultMode = DEFAULT_MODE[collectionName];
-    if (!defaultMode || !modes.has(defaultMode)) {
-      throw new Error(
-        `Collection "${collectionName}" has multiple modes (${modeKeys.join(', ')}) but no default ` +
-          `configured. Add DEFAULT_MODE["${collectionName}"] in build-tokens.mjs.`
-      );
-    }
-
-    themeLines.push(...emitTokenLines(modes.get(defaultMode), registry));
-
-    for (const modeKey of modeKeys) {
-      if (modeKey === defaultMode) continue;
-      overrideBlocks.push({
-        selector: `[data-${collectionName}="${modeKey}"]`,
-        lines: emitTokenLines(modes.get(modeKey), registry),
-      });
-    }
+  if (!defaultResolved) {
+    throw new Error(`No theme named "${DEFAULT_THEME}" found in tokens-source/$themes.json.`);
   }
 
-  const parts = [GENERATED_HEADER, '@theme {', ...themeLines, '}'];
-  for (const block of overrideBlocks) {
-    parts.push('', `${block.selector} {`, ...block.lines, '}');
-  }
-  return parts.join('\n') + '\n';
-}
-
-function main() {
-  const collections = loadCollections();
-  const css = generateCss(collections);
+  const orderedVarNames = [...themeEntries.get(DEFAULT_THEME).keys()];
+  const css = generateCss(themeEntries, orderedVarNames);
   writeFileSync(OUTPUT_PATH, css, 'utf8');
   console.log(`tokens:build wrote ${relative(PACKAGE_ROOT, OUTPUT_PATH)}`);
 
-  const { registry: idRegistry, excludedIds } = buildIdRegistry(collections);
-  const intentDoc = loadIntentDoc();
-  const result = reconcileIntent(intentDoc, idRegistry, excludedIds);
-  const { added, relabeled, removed, stubbed, orphaned } = result;
-  if (writeIntentIfChanged(intentDoc, result)) {
-    console.log(`tokens:build wrote ${relative(PACKAGE_ROOT, INTENT_PATH)}`);
-  }
-  if (added.length > 0) {
-    console.log(`  + ${added.length} new token(s) awaiting context: ${added.join(', ')}`);
-  }
-  if (relabeled.length > 0) {
-    for (const r of relabeled) console.log(`  ~ ${r.token}: ${r.fields.join(', ')} updated from Figma export`);
-  }
-  if (removed.length > 0) {
-    console.log(`  - ${removed.length} entry(ies) removed (${[...INTENT_EXCLUDED_COLLECTIONS].join('/')} don't carry intent here): ${removed.join(', ')}`);
-  }
-  if (stubbed.length > 0) {
-    console.log(`  ~ ${stubbed.length} deprecated entry(ies) missing a "deprecated" block, stubbed: ${stubbed.join(', ')}`);
-  }
-  if (orphaned.length > 0) {
-    console.log(`  ! ${orphaned.length} intent.yaml entry(ies) with no matching source token (rename/delete?): ${orphaned.join(', ')}`);
-    console.log('    Remove them from intent.yaml once confirmed stale — tokens:build never deletes an entry itself.');
-  }
-
-  const reviewIssues = collectReviewIssues(intentDoc, idRegistry);
-  if (reviewIssues.length > 0) {
+  const issues = collectIntentIssues(defaultResolved);
+  if (issues.length > 0) {
     throw new Error(
-      `${reviewIssues.length} token(s) in intent.yaml need review before tokens:build can pass:\n` +
-        reviewIssues.map((m) => `  - ${m}`).join('\n')
+      `${issues.length} token(s) in tokens-source/semantic.json need intent review before tokens:build can pass:\n` +
+        issues.map((m) => `  - ${m}`).join('\n')
     );
   }
 }
 
 try {
-  main();
+  await main();
 } catch (err) {
   console.error(`tokens:build failed: ${err.message}`);
   process.exitCode = 1;

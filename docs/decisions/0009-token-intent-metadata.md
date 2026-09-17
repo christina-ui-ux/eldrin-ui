@@ -1,9 +1,9 @@
 ---
 id: 0009
 title: Token intent metadata lives in intent.yaml, keyed by Figma variableId
-status: proposed
+status: superseded
 date: 2026-08-26
-superseded_by:
+superseded_by: 0014
 ---
 
 # Context

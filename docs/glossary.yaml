@@ -142,24 +142,29 @@ entries:
   - term: token intent metadata
     category: token-structure
     decision: >
-      Per-token intent (per CLAUDE.md/DESIGN.md) lives in
-      `packages/eldrin-ui/src/tokens/intent.yaml`, keyed by the token's
-      Figma `com.figma.variableId` — not its CSS var name, which can
-      change on a Figma-side rename. Fields: `token`/`path`/`role`/
-      `classification` (derived, kept in sync automatically), `status`
-      (stable/experimental/deprecated), `deprecated.replacement`
-      (required once deprecated), `usage` (what it's for), `notFor`
-      (what it's explicitly not for), `pairsWith` (other tokens it's
-      designed to pair with for accessibility). `npm run tokens:build`
-      reconciles this file every run and fails the build if any tracked
-      token is unreviewed. Only `semantics` tokens get an entry —
-      `primitives`/`scale`/`components` are excluded. See ADR 0009 for
-      the full mechanism and field-by-field reasoning.
+      Per-token intent (per CLAUDE.md/DESIGN.md) lives inline on each
+      semantic token in `tokens-source/semantic.json` — no separate
+      file. `$description` holds `usage` (what it's for);
+      `$extensions["com.eldrin-ui.intent"]` holds `status`
+      (stable/experimental/deprecated), `notFor` (what it's explicitly
+      not for), `pairsWith` (other tokens it's designed to pair with
+      for accessibility), and — once `status` is `deprecated` —
+      `deprecated.replacement`. `role`/`classification` aren't stored
+      anywhere; they're recomputed on demand from the token's own path
+      (family segment for a `bg.*` token, element segment otherwise —
+      see "semantic token naming formula" below). `npm run tokens:build`
+      validates this block every run (read-only — it never writes back
+      into `tokens-source/`) and fails if any tracked token is
+      unreviewed. Only `semantic` tokens carry intent —
+      `primitives`/`scale`/`component` are excluded. See ADR 0015 (and
+      ADR 0009/0014, which it supersedes) for the full mechanism and
+      field-by-field reasoning.
     rationale: >
-      Figma's own variable export carries no intent field (ADR 0008
-      scoped it out), so it's hand-authored separately. Keyed by
-      variableId instead of the derived var name so a Figma-side rename
-      doesn't silently orphan the entry.
+      Now that `tokens-source/` is hand-authored (ADR 0013), DTCG's own
+      `$description`/`$extensions` fields hold intent directly next to
+      the value they describe, with nothing left to key-match across
+      two files (ADR 0015, superseding the separate-file approach of
+      ADR 0009/0014).
     status: decided
 
   - term: surface / fill

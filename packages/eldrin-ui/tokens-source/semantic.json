@@ -1,23 +1,144 @@
 {
   "bg": {
     "fill": {
-      "interaction": { "$type": "color", "$value": "{seagull.600}" },
-      "error": { "$type": "color", "$value": "{red.500}" }
+      "interaction": {
+        "$type": "color",
+        "$value": "{seagull.600}",
+        "$description": "Default-state background fill for the primary (main accent/CTA) control — the base color a control uses to signal \"this is the main action\" before any hover/active/selected/disabled state is applied.",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "surface background color, non-interactive background",
+            "pairsWith": []
+          }
+        }
+      },
+      "error": {
+        "$type": "color",
+        "$value": "{red.500}",
+        "$description": "Background fill for a control communicating an error or destructive state (e.g. a destructive/delete button, or a control flagged invalid) — the fill color a control uses to signal \"this represents an error or a destructive action.\"",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "surface background color, non-interactive background, default/neutral control fill",
+            "pairsWith": ["--text-on-fill-error"]
+          }
+        }
+      }
     },
     "surface": {
-      "base": { "$type": "color", "$value": "{gray.50}" },
-      "raised": { "$type": "color", "$value": "{gray.0}" },
-      "error": { "$type": "color", "$value": "{red.200}" }
+      "base": {
+        "$type": "color",
+        "$value": "{gray.50}",
+        "$description": "Neutral background for a container component that accepts child content — the `base` value on the concept axis (see docs/glossary.yaml's `base` entry): no specific color role applied, same as `bg.fill.base`/`text.base` would be for their own elements. Also the un-elevated (ground-level) surface — an elevated container (Card, Popover, etc.) should use the future `raised` token once one exists, not this one.",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "control fill, interactive/pressable background, error surface variant, an elevated/raised container surface",
+            "pairsWith": []
+          }
+        }
+      },
+      "raised": {
+        "$type": "color",
+        "$value": "{gray.0}",
+        "$description": "Background for a container component that sits above the page's `base` surface (e.g. Card, Popover) — the `raised` elevation value (see docs/glossary.yaml's `raised` entry), orthogonal to the concept axis: a raised surface can still carry `base`, or in principle any other concept, on top of it.",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "control fill, the page-level/ground surface (use bg-surface-base for that), error surface variant",
+            "pairsWith": []
+          }
+        }
+      },
+      "error": {
+        "$type": "color",
+        "$value": "{red.200}",
+        "$description": "Background for a container component when it is communicating an error state (e.g. an inline error panel, an invalid form section, an alert container) — the surface color a container uses to signal \"this content represents an error.\"",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "control fill, default/neutral surface, non-error alert surfaces",
+            "pairsWith": []
+          }
+        }
+      }
     }
   },
   "text": {
-    "base": { "$type": "color", "$value": "{deep.950}" },
-    "primary": { "$type": "color", "$value": "{seagull.600}" },
-    "on-fill-primary": { "$type": "color", "$value": "{gray.0}" },
-    "error": { "$type": "color", "$value": "{red.950}" },
-    "on-fill-error": { "$type": "color", "$value": "{gray.0}" }
+    "base": {
+      "$type": "color",
+      "$value": "{deep.950}",
+      "$description": "Base body text color — the `base` value on the concept axis (see docs/glossary.yaml's `base` entry): no specific color role applied, used wherever no more specific semantic text role (primary, error, on-fill, etc.) applies.",
+      "$extensions": {
+        "com.eldrin-ui.intent": {
+          "status": "stable",
+          "notFor": "text placed on top of a fill background (use an on-fill variant instead), emphasized/primary text, error text",
+          "pairsWith": []
+        }
+      }
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "{seagull.600}",
+      "$description": "Text rendered in the primary (main accent/CTA) color role — e.g. a link, an emphasized label, or text calling attention using the accent color — set on a surface background, not on top of a filled control.",
+      "$extensions": {
+        "com.eldrin-ui.intent": {
+          "status": "stable",
+          "notFor": "text on top of a bg-fill-primary/interaction background (use text-on-fill-primary instead), base/neutral body text, error text",
+          "pairsWith": []
+        }
+      }
+    },
+    "on-fill-primary": {
+      "$type": "color",
+      "$value": "{gray.0}",
+      "$description": "Text/icon color for content placed directly on top of a bg-fill-interaction (primary) background — e.g. label text inside a primary/filled button — contrast-verified against that fill.",
+      "$extensions": {
+        "com.eldrin-ui.intent": {
+          "status": "stable",
+          "notFor": "text on a surface/base background, text on any other fill color (error, etc.), text-primary's own surface-background use case",
+          "pairsWith": ["--bg-fill-interaction"]
+        }
+      }
+    },
+    "error": {
+      "$type": "color",
+      "$value": "{red.950}",
+      "$description": "Text color for content communicating an error (e.g. a validation message, an inline error label) — set on a surface/base background, not on top of a filled control.",
+      "$extensions": {
+        "com.eldrin-ui.intent": {
+          "status": "stable",
+          "notFor": "text on top of a bg-fill-error background (use text-on-fill-error instead), base/neutral text",
+          "pairsWith": []
+        }
+      }
+    },
+    "on-fill-error": {
+      "$type": "color",
+      "$value": "{gray.0}",
+      "$description": "Text/icon color for content placed directly on top of a bg-fill-error background — e.g. label text inside a destructive/error-filled button — contrast-verified against that fill.",
+      "$extensions": {
+        "com.eldrin-ui.intent": {
+          "status": "stable",
+          "notFor": "text on a surface/base background, text on any other fill color, text-error's own surface-background use case",
+          "pairsWith": ["--bg-fill-error"]
+        }
+      }
+    }
   },
   "border": {
-    "control": { "$type": "color", "$value": "{gray.400}" }
+    "control": {
+      "$type": "color",
+      "$value": "{gray.400}",
+      "$description": "Default border color for atomic control components (e.g. Input, Checkbox, Select) — the border a control uses in its neutral/default state. Note: `control` here is a plain-English description in the `concept` slot (border has no `family` segment), not a value on the surface/fill classification axis — see the glossary's \"container / control\" entry.",
+      "$extensions": {
+        "com.eldrin-ui.intent": {
+          "status": "stable",
+          "notFor": "container/surface borders, error/focus border variants, divider lines",
+          "pairsWith": []
+        }
+      }
+    }
   }
 }
