@@ -1,7 +1,7 @@
 {
   "button": {
     "primary": {
-      "background": { "$type": "color", "$value": "{bg.fill.interaction}" },
+      "background": { "$type": "color", "$value": "{bg.fill.error}" },
       "text": { "$type": "color", "$value": "{text.on-fill-primary}" }
     }
   }

@@ -64,7 +64,7 @@
   --text-error: var(--color-red-950);
   --text-on-fill-error: var(--color-gray-0);
   --border-control: var(--color-gray-400);
-  --button-primary-background: var(--bg-fill-interaction);
+  --button-primary-background: var(--bg-fill-error);
   --button-primary-text: var(--text-on-fill-primary);
 }
 
