@@ -353,6 +353,145 @@ entries:
       tokens are always inherited/derived from the same vocabulary.
     status: decided
 
+  # ---- Typography ----
+
+  - term: type element naming
+    category: typography
+    decision: >
+      `type.<set>.<role>.<property>` (dot notation) is the semantic
+      typography token shape — e.g. `type.ui.heading-1.size` ->
+      `--type-ui-heading-1-size`. `type` is its own top-level element
+      (peer to `bg`/`text`/`border`/`icon`), not folded into `text` —
+      `text.*` already names text *color* roles (`text.base`,
+      `text.primary`, ...), and reusing it for typography would also
+      collide with Tailwind v4's own reserved `--text-*` theme namespace
+      (font-size), which `text.*` color tokens already inadvertently sit
+      inside today. `<set>` is `ui` today — `editorial` is designed but
+      deferred (see "type style strategy" below); `<property>` is one of
+      `size` | `line-height` |
+      `weight` | `family` | `letter-spacing`. `family` is not a free
+      value per role — every role's `type.<set>.<role>.family` aliases
+      one of exactly two global tokens, `type.family.heading` or
+      `type.family.body` (see "type family split" below), never a role-
+      or set-specific literal. `letter-spacing` likewise isn't set-
+      specific — every role's `type.<set>.<role>.letter-spacing` aliases
+      the same per-role value regardless of `<set>` (authored in `em`, so
+      it scales with font-size automatically).
+    rationale: >
+      A role bundles five separate CSS custom properties (size/
+      line-height/weight/family/letter-spacing) rather than one
+      composite value, because `build-tokens.mjs` only resolves scalar
+      `$value`s (see ADR 0016); a component still treats the bundle as
+      one named style, the same way a Figma text style groups several
+      properties under one name — or, in practice, reaches for the
+      bundled `@utility` class instead of the five properties directly
+      (see "type utility class naming" below).
+    status: decided
+
+  - term: type scale roles
+    category: typography
+    decision: >
+      Closed role vocabulary, extended only by editing this entry:
+      `heading-1`, `heading-2`, `heading-3`, `body`, `body-small`,
+      `caption`, `label`. `heading-1` is the largest/most prominent,
+      descending in the order listed. `label` is specifically for text
+      set on or directly beside a control (button/input/tag label), not
+      free-standing prose. Every role lives under the active set(s) in
+      "type style strategy" below (`type.ui.heading-1` today) — the role
+      list itself doesn't vary by set.
+    rationale: >
+      Matches the common Figma-text-style / design-system role set
+      without over-fragmenting into heading-4 through heading-6 that
+      nothing in this system needs yet. Same closed-vocabulary pattern
+      as "semantic spacing naming"'s `between-<thing>` list above — add
+      a role here before inventing one ad hoc in a component spec.
+    status: decided
+
+  - term: type style strategy
+    category: typography
+    decision: >
+      Two named type sets in the design, closed at exactly these two:
+      `ui` and `editorial` — but only `ui` is actually built in
+      `tokens-source/` right now; `editorial` is deferred, not
+      abandoned (see ADR 0016's "Style strategy" section for how to
+      restore it). `ui` is compact sizing for task-focused product
+      interfaces — forms, controls, dense layouts, a user embedded in
+      one view for a while. `editorial`, when it returns, is larger,
+      more generously spaced sizing for content-led pages —
+      marketing/documentation pages a user scans or reads across in one
+      session. Both sets share the same role vocabulary ("type scale
+      roles" above), the same weight steps, and the same two family
+      tokens; only `size` and `line-height` differ per set. A single
+      component or region should draw from one set at a time — mixing
+      sets inside one component jumbles the hierarchy both were designed
+      to signal — but a page or view can blend both, e.g. an `editorial`
+      page dropping into `ui` type for an embedded form.
+    rationale: >
+      Modeled directly on Carbon Design System's productive/expressive
+      "style strategies" (see ADR 0016), renamed `ui`/`editorial` here
+      instead of reusing Carbon's own terms — those two words say what
+      each set is *for* without requiring a reader to already know
+      Carbon's vocabulary first, matching this project's general
+      preference for familiar naming over spec-precise jargon. Recorded
+      here even while only `ui` ships, so whoever re-adds `editorial`
+      doesn't have to re-derive the vocabulary or use-case guidance from
+      scratch.
+    status: decided
+
+  - term: type utility class naming
+    category: typography
+    decision: >
+      `<set>-<role>` (e.g. `ui-heading-1`, and `editorial-body` once that
+      set returns — see "type style strategy" above) is the generated CSS
+      class name bundling a role's five properties (size/line-height/
+      weight/family/letter-spacing) into one Tailwind v4 `@utility` — see
+      ADR 0016's "Bundled utility classes." Always both `<set>` and
+      `<role>`, never a bare role name (`heading-1`) defaulting to either
+      set — kept set-qualified even now, with only `ui` active.
+    rationale: >
+      A bare unqualified class would need a hidden default set, and a
+      consumer reaching for it without checking the docs would silently
+      get whichever set happened to be the default — a footgun once two
+      sets exist side by side. Naming both axes in the class removes the
+      guess: the class name alone says which set applies.
+    status: decided
+
+  - term: font weight vocabulary
+    category: typography
+    decision: >
+      Named weight steps only, never a bare numeric weight in a
+      semantic/component token: `regular` (400), `medium` (500),
+      `semibold` (600), `bold` (700).
+    rationale: >
+      Mirrors the "state vocabulary" and `size` entries' fixed-named-
+      steps pattern — a semantic token reads `type.label.weight` ->
+      `medium`, not a raw `500` a reader has to already know the scale
+      to interpret.
+    status: decided
+
+  - term: type family split
+    category: typography
+    decision: >
+      Two global font-family tokens, not one: `type.family.heading`
+      (used by `heading-1`/`heading-2`/`heading-3`) and
+      `type.family.body` (used by `body`/`body-small`/`caption`/
+      `label`). Both currently alias the same primitive,
+      `family.plex-sans` — IBM Plex Sans, falling back to `-apple-
+      system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif` if the webfont fails to load. No custom font
+      is bundled by this package — a consuming app must load IBM Plex
+      Sans itself (e.g. a `<link>` to Google Fonts, or self-hosted
+      `@font-face`).
+    rationale: >
+      Kept as two tokens even though the value is identical today so a
+      future "headings get their own display face" change edits one
+      alias instead of hunting every role for which ones happen to be
+      headings. Replaces this same entry's earlier "system font stack"
+      decision (no webfont, zero load cost) outright — IBM Plex Sans is
+      now the chosen typeface; revisit here first if it changes again,
+      rather than switching ad hoc in a component or in `DESIGN.md`.
+    status: decided
+
   # ---- Abbreviations ----
 
   - term: bg

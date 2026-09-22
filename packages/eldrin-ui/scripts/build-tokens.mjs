@@ -50,6 +50,7 @@ register(StyleDictionary);
 const SET_COLLECTION = {
   'primitives-light': 'primitives',
   'primitives-dark': 'primitives',
+  'type-primitives': 'type-primitives',
   'scale-medium': 'scale',
   'scale-large': 'scale',
   semantic: 'semantic',
@@ -68,8 +69,29 @@ const COLLECTION_PREFIX = { primitives: 'color' };
 const NAMESPACES = { space: 'spacing' };
 
 // Unit appended to a bare number, keyed by the CSS namespace (scale
-// tokens are unitless numbers in tokens-source/).
-const UNITS = { spacing: 'px' };
+// tokens are unitless numbers in tokens-source/). fontsize/lineheight
+// group names are written without a hyphen in tokens-source/ so this
+// lookup (which only reads formatLiteral()'s first hyphen-segment of
+// the CSS var name) resolves correctly — a hyphenated group name like
+// "font-size" would collapse to just "font" here.
+const UNITS = { spacing: 'px', fontsize: 'px', letterspacing: 'em' };
+
+// Maps a `type.<set>.<role>.<property>` semantic token's last path segment
+// to the CSS property the generated `@utility` bundle sets it on — see
+// buildUtilityBlocks() below and docs/decisions/0016-typography-token-model.md's
+// "Bundled utility classes" section.
+const TYPE_ROLE_PROPERTY_CSS = {
+  size: 'font-size',
+  'line-height': 'line-height',
+  weight: 'font-weight',
+  family: 'font-family',
+  'letter-spacing': 'letter-spacing',
+};
+// Only `ui` exists today — `editorial` was designed and then deferred
+// (see docs/decisions/0016-typography-token-model.md's "Style strategy"
+// section); add it back to this alternation when tokens-source/ has
+// `type.editorial.*` tokens again.
+const TYPE_ROLE_PATH = /^type\.(ui)\.([a-z0-9-]+)\.(size|line-height|weight|family|letter-spacing)$/;
 
 // The only set whose tokens carry intent — primitives/scale are raw
 // values consumed by the layers above them, component is a pure alias
@@ -134,6 +156,10 @@ function formatLiteral(token, varName) {
     const namespace = varName.slice(2).split('-')[0];
     return `${raw}${UNITS[namespace] ?? ''}`;
   }
+  if ($type === 'fontFamily') {
+    const names = Array.isArray(raw) ? raw : [raw];
+    return names.map((name) => (/\s/.test(name) ? `"${name}"` : name)).join(', ');
+  }
   throw new Error(
     `Token "${token.path.join('.')}" has an unsupported $type "${$type}". ` +
       `Extend build-tokens.mjs's formatLiteral() to handle it.`
@@ -183,6 +209,33 @@ async function resolveTheme(setNames) {
     }
   }
   return { entries, resolved };
+}
+
+// Bundles every `type.<set>.<role>.*` role into one `@utility <set>-<role>`
+// block (Tailwind v4's custom-utility at-rule — tree-shaken the same as any
+// built-in utility, only emitted into a consumer's build if that class name
+// is actually used) so a component can write one class instead of wiring up
+// four or five separate custom properties by hand. Built once from the
+// default theme's resolved token list — a `var()` reference, not a copied
+// literal, so the same block stays correct under the dark/large override
+// selectors without needing its own per-theme variants.
+function buildUtilityBlocks(resolved) {
+  const bundles = new Map();
+  for (const { rawPath, varName } of resolved) {
+    const match = TYPE_ROLE_PATH.exec(rawPath);
+    if (!match) continue;
+    const [, set, role, property] = match;
+    const key = `${set}-${role}`;
+    if (!bundles.has(key)) bundles.set(key, new Map());
+    bundles.get(key).set(property, varName);
+  }
+
+  const blocks = [];
+  for (const [className, props] of bundles) {
+    const declarations = [...props].map(([property, varName]) => `  ${TYPE_ROLE_PROPERTY_CSS[property]}: var(${varName});`);
+    blocks.push(`@utility ${className} {\n${declarations.join('\n')}\n}`);
+  }
+  return blocks.join('\n\n');
 }
 
 function generateCss(themeEntries, orderedVarNames) {
@@ -257,7 +310,9 @@ async function main() {
   }
 
   const orderedVarNames = [...themeEntries.get(DEFAULT_THEME).keys()];
-  const css = generateCss(themeEntries, orderedVarNames);
+  const themeCss = generateCss(themeEntries, orderedVarNames);
+  const utilityCss = buildUtilityBlocks(defaultResolved);
+  const css = utilityCss ? `${themeCss}\n${utilityCss}\n` : themeCss;
   writeFileSync(OUTPUT_PATH, css, 'utf8');
   console.log(`tokens:build wrote ${relative(PACKAGE_ROOT, OUTPUT_PATH)}`);
 

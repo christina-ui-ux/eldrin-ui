@@ -2,6 +2,7 @@
   "tokenSetOrder": [
     "primitives-light",
     "primitives-dark",
+    "type-primitives",
     "scale-medium",
     "scale-large",
     "semantic",

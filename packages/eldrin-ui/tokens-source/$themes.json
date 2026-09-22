@@ -5,6 +5,7 @@
     "selectedTokenSets": {
       "primitives-light": "enabled",
       "primitives-dark": "disabled",
+      "type-primitives": "enabled",
       "scale-medium": "enabled",
       "scale-large": "disabled",
       "semantic": "enabled",
@@ -17,6 +18,7 @@
     "selectedTokenSets": {
       "primitives-light": "disabled",
       "primitives-dark": "enabled",
+      "type-primitives": "enabled",
       "scale-medium": "enabled",
       "scale-large": "disabled",
       "semantic": "enabled",
@@ -29,6 +31,7 @@
     "selectedTokenSets": {
       "primitives-light": "enabled",
       "primitives-dark": "disabled",
+      "type-primitives": "enabled",
       "scale-medium": "disabled",
       "scale-large": "enabled",
       "semantic": "enabled",

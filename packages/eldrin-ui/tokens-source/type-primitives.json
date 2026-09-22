@@ -1,0 +1,32 @@
+{
+  "family": {
+    "plex-sans": {
+      "$type": "fontFamily",
+      "$value": [
+        "IBM Plex Sans",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "Segoe UI",
+        "Roboto",
+        "Helvetica Neue",
+        "Arial",
+        "sans-serif"
+      ]
+    }
+  },
+  "weight": {
+    "regular": { "$type": "number", "$value": 400 },
+    "medium": { "$type": "number", "$value": 500 },
+    "semibold": { "$type": "number", "$value": 600 },
+    "bold": { "$type": "number", "$value": 700 }
+  },
+  "letterspacing": {
+    "heading-1": { "$type": "number", "$value": -0.02 },
+    "heading-2": { "$type": "number", "$value": -0.015 },
+    "heading-3": { "$type": "number", "$value": -0.01 },
+    "body": { "$type": "number", "$value": 0 },
+    "body-small": { "$type": "number", "$value": 0 },
+    "caption": { "$type": "number", "$value": 0.01 },
+    "label": { "$type": "number", "$value": 0.01 }
+  }
+}

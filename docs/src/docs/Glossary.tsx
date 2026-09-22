@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown';
+import { Source } from '@storybook/addon-docs/blocks';
 import { parse } from 'yaml';
 import glossaryRaw from '../../glossary.yaml?raw';
 import curationRaw from './glossary-storybook.yaml?raw';
@@ -48,4 +49,27 @@ export function GlossaryPage() {
       ))}
     </dl>
   );
+}
+
+// Split into an Overview (curated, human-readable entries) and a Code
+// tab (the raw source file) via GlobalDocsContainer's `pageDocs`
+// parameter (Glossary.stories.tsx) — same split Typography.tsx/
+// TokensColors.tsx use, see Typography.tsx's header comment for why.
+
+export function GlossaryOverview() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <p>
+        A curated subset of naming decisions from <code>docs/glossary.yaml</code> — the full file
+        stays the lint-enforced source of truth (<code>npm run lint:glossary</code>, ADR 0002).
+        Which terms appear here is picked by hand in{' '}
+        <code>docs/src/docs/glossary-storybook.yaml</code>.
+      </p>
+      <GlossaryPage />
+    </div>
+  );
+}
+
+export function GlossaryCode() {
+  return <Source code={glossaryRaw} language="yaml" />;
 }

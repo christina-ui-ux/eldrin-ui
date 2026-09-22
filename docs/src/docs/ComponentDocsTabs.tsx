@@ -9,15 +9,22 @@ import { Children, isValidElement, useState, type ReactElement, type ReactNode }
 // GlobalDocsContainer (docs/src/docs/GlobalDocsContainer.tsx).
 
 interface TabPanelProps {
+  label?: string;
   children?: ReactNode;
 }
 
+// Two ways a child ends up with a tab label: a fixed one baked into the
+// component itself (`definePanel`, for the component-page Overview/Code/
+// Changelog trio — always the same three names, every component), or a
+// `label` prop set per instance (`Panel`, for a documentation page —
+// Typography/Colors/Glossary each need a different, page-specific set of
+// tabs, so the label can't be fixed on a shared component).
 function definePanel(label: string, defaultContent?: ReactNode) {
-  function Panel({ children }: TabPanelProps) {
+  function FixedPanel({ children }: TabPanelProps) {
     return <>{children ?? defaultContent}</>;
   }
-  Panel.tabLabel = label;
-  return Panel;
+  FixedPanel.tabLabel = label;
+  return FixedPanel;
 }
 
 const Overview = definePanel('Overview');
@@ -27,10 +34,14 @@ const Changelog = definePanel(
   <p>No per-component changelog exists yet — see the repo's commit history.</p>,
 );
 
+function Panel({ children }: TabPanelProps) {
+  return <>{children}</>;
+}
+
 function ComponentDocsTabsImpl({ header, children }: { header?: ReactNode; children: ReactNode }) {
   const panels = Children.toArray(children).filter(isValidElement) as ReactElement<
     TabPanelProps,
-    { tabLabel: string }
+    { tabLabel?: string }
   >[];
   const [active, setActive] = useState(0);
 
@@ -42,7 +53,7 @@ function ComponentDocsTabsImpl({ header, children }: { header?: ReactNode; child
         {header}
         <div role="tablist" className="tablist">
           {panels.map((panel, i) => {
-            const label = (panel.type as { tabLabel?: string }).tabLabel ?? `Tab ${i + 1}`;
+            const label = panel.props.label ?? (panel.type as { tabLabel?: string }).tabLabel ?? `Tab ${i + 1}`;
             const isActive = active === i;
             return (
               <button
@@ -55,7 +66,7 @@ function ComponentDocsTabsImpl({ header, children }: { header?: ReactNode; child
                   padding: '8px 16px',
                   border: 'none',
                   borderBottom: isActive ? '2px solid #24709D' : '2px solid transparent',
-                  background: 'none',
+                  backgroundColor: 'transparent',
                   fontSize: 14,
                   fontWeight: isActive ? 600 : 400,
                   color: isActive ? '#161B3E' : '#594C5B',
@@ -83,4 +94,5 @@ export const ComponentDocsTabs = Object.assign(ComponentDocsTabsImpl, {
   Overview,
   Code,
   Changelog,
+  Panel,
 });

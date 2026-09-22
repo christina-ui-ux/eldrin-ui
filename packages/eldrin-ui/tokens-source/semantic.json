@@ -127,6 +127,491 @@
       }
     }
   },
+  "type": {
+    "family": {
+      "heading": {
+        "$type": "fontFamily",
+        "$value": "{family.plex-sans}",
+        "$description": "Font family for heading roles (type.ui.heading-1/2/3) — IBM Plex Sans.",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "body/caption/label roles (use type.family.body)",
+            "pairsWith": []
+          }
+        }
+      },
+      "body": {
+        "$type": "fontFamily",
+        "$value": "{family.plex-sans}",
+        "$description": "Font family for non-heading roles (type.ui.body/body-small/caption/label) — IBM Plex Sans, currently the same typeface as headings, kept as its own token in case body copy and headings ever diverge.",
+        "$extensions": {
+          "com.eldrin-ui.intent": {
+            "status": "stable",
+            "notFor": "heading roles (use type.family.heading)",
+            "pairsWith": []
+          }
+        }
+      }
+    },
+    "ui": {
+      "heading-1": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.heading-1}",
+          "$description": "Font size for the largest heading — a page or top-level section title.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body copy, heading-2/heading-3, anything below the page's top heading",
+              "pairsWith": [
+                "--type-ui-heading-1-line-height",
+                "--type-ui-heading-1-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.heading-1}",
+          "$description": "Line height paired with type.ui.heading-1.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-heading-1-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.semibold}",
+          "$description": "Font weight for type.ui.heading-1 (semibold).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body copy weight, other heading levels' weight if they diverge later",
+              "pairsWith": ["--type-ui-heading-1-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.heading}",
+          "$description": "Font family for type.ui.heading-1 — the heading typeface (type.family.heading).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body/caption/label roles (use their own family alias into type.family.body)",
+              "pairsWith": ["--type-ui-heading-1-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.heading-1}",
+          "$description": "Letter spacing paired with type.ui.heading-1.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-heading-1-size"]
+            }
+          }
+        }
+      },
+      "heading-2": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.heading-2}",
+          "$description": "Font size for a second-level heading — a subsection title beneath heading-1.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "the page's top-level title (use type.ui.heading-1), body copy",
+              "pairsWith": [
+                "--type-ui-heading-2-line-height",
+                "--type-ui-heading-2-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.heading-2}",
+          "$description": "Line height paired with type.ui.heading-2.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-heading-2-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.semibold}",
+          "$description": "Font weight for type.ui.heading-2 (semibold).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body copy weight",
+              "pairsWith": ["--type-ui-heading-2-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.heading}",
+          "$description": "Font family for type.ui.heading-2 — the heading typeface (type.family.heading).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body/caption/label roles (use their own family alias into type.family.body)",
+              "pairsWith": ["--type-ui-heading-2-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.heading-2}",
+          "$description": "Letter spacing paired with type.ui.heading-2.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-heading-2-size"]
+            }
+          }
+        }
+      },
+      "heading-3": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.heading-3}",
+          "$description": "Font size for the smallest heading step — e.g. a card or group title beneath heading-2.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "page/subsection titles (use type.ui.heading-1/type.ui.heading-2), body copy",
+              "pairsWith": [
+                "--type-ui-heading-3-line-height",
+                "--type-ui-heading-3-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.heading-3}",
+          "$description": "Line height paired with type.ui.heading-3.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-heading-3-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.semibold}",
+          "$description": "Font weight for type.ui.heading-3 (semibold).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body copy weight",
+              "pairsWith": ["--type-ui-heading-3-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.heading}",
+          "$description": "Font family for type.ui.heading-3 — the heading typeface (type.family.heading).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body/caption/label roles (use their own family alias into type.family.body)",
+              "pairsWith": ["--type-ui-heading-3-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.heading-3}",
+          "$description": "Letter spacing paired with type.ui.heading-3.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-heading-3-size"]
+            }
+          }
+        }
+      },
+      "body": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.body}",
+          "$description": "Font size for default paragraph/body copy — the size most on-screen reading text uses.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "headings, captions/fine print, label text set on a control",
+              "pairsWith": [
+                "--type-ui-body-line-height",
+                "--type-ui-body-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.body}",
+          "$description": "Line height paired with type.ui.body.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-body-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.regular}",
+          "$description": "Font weight for type.ui.body (regular).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "heading weight, label weight",
+              "pairsWith": ["--type-ui-body-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.body}",
+          "$description": "Font family for type.ui.body — the body typeface (type.family.body).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "heading roles (use their own family alias into type.family.heading)",
+              "pairsWith": ["--type-ui-body-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.body}",
+          "$description": "Letter spacing paired with type.ui.body.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-body-size"]
+            }
+          }
+        }
+      },
+      "body-small": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.body-small}",
+          "$description": "Font size for a reduced-size body copy — secondary/supporting text blocks alongside primary body copy.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "primary reading copy (use type.ui.body), headings, captions",
+              "pairsWith": [
+                "--type-ui-body-small-line-height",
+                "--type-ui-body-small-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.body-small}",
+          "$description": "Line height paired with type.ui.body-small.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-body-small-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.regular}",
+          "$description": "Font weight for type.ui.body-small (regular).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "heading weight, label weight",
+              "pairsWith": ["--type-ui-body-small-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.body}",
+          "$description": "Font family for type.ui.body-small — the body typeface (type.family.body).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "heading roles (use their own family alias into type.family.heading)",
+              "pairsWith": ["--type-ui-body-small-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.body-small}",
+          "$description": "Letter spacing paired with type.ui.body-small.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-body-small-size"]
+            }
+          }
+        }
+      },
+      "caption": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.caption}",
+          "$description": "Font size for the smallest text role — fine print, timestamps, metadata set beneath primary content.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "primary reading copy, label text set on a control",
+              "pairsWith": [
+                "--type-ui-caption-line-height",
+                "--type-ui-caption-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.caption}",
+          "$description": "Line height paired with type.ui.caption.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-caption-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.regular}",
+          "$description": "Font weight for type.ui.caption (regular).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "label weight, heading weight",
+              "pairsWith": ["--type-ui-caption-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.body}",
+          "$description": "Font family for type.ui.caption — the body typeface (type.family.body).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "heading roles (use their own family alias into type.family.heading)",
+              "pairsWith": ["--type-ui-caption-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.caption}",
+          "$description": "Letter spacing paired with type.ui.caption.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-caption-size"]
+            }
+          }
+        }
+      },
+      "label": {
+        "size": {
+          "$type": "number",
+          "$value": "{fontsize.ui.label}",
+          "$description": "Font size for text set on or directly alongside a control (a button label, an input's own label, a tag) — not free-standing prose.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "paragraph copy (use type.ui.body/type.ui.body-small), headings",
+              "pairsWith": [
+                "--type-ui-label-line-height",
+                "--type-ui-label-weight"
+              ]
+            }
+          }
+        },
+        "line-height": {
+          "$type": "number",
+          "$value": "{lineheight.ui.label}",
+          "$description": "Line height paired with type.ui.label.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-label-size"]
+            }
+          }
+        },
+        "weight": {
+          "$type": "number",
+          "$value": "{weight.medium}",
+          "$description": "Font weight for type.ui.label (medium) — slightly heavier than body copy so control labels read clearly at small sizes.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "body copy weight",
+              "pairsWith": ["--type-ui-label-size"]
+            }
+          }
+        },
+        "family": {
+          "$type": "fontFamily",
+          "$value": "{type.family.body}",
+          "$description": "Font family for type.ui.label — the body typeface (type.family.body).",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "heading roles (use their own family alias into type.family.heading)",
+              "pairsWith": ["--type-ui-label-size"]
+            }
+          }
+        },
+        "letter-spacing": {
+          "$type": "number",
+          "$value": "{letterspacing.label}",
+          "$description": "Letter spacing paired with type.ui.label.size.",
+          "$extensions": {
+            "com.eldrin-ui.intent": {
+              "status": "stable",
+              "notFor": "any other role's size token",
+              "pairsWith": ["--type-ui-label-size"]
+            }
+          }
+        }
+      }
+    }
+  },
   "border": {
     "control": {
       "$type": "color",

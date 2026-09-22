@@ -1,3 +1,11 @@
+/* Docs-only font load for previewing type.family.heading/type.family.body
+   (IBM Plex Sans — see docs/decisions/0016-typography-token-model.md). The
+   published component library ships no font files itself; a consuming app
+   is responsible for loading this typeface, the same way it must load a
+   root scale/theme provider (ADR 0007). This import exists only so
+   Storybook's own preview shows the real typeface instead of a fallback. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
 /* Storybook's addon-docs hard-codes .sbdocs-content to max-width: 1000px,
    centered — this caps every docs page (not just the header) well
    short of the panel's actual width. Removing it here is the

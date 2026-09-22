@@ -17,10 +17,14 @@ const GITHUB_REPO = 'https://github.com/christina-ui-ux/eldrin-ui';
 const GITHUB_BRANCH = 'main';
 
 interface ComponentDocsHeaderProps {
-  /** Component display name, e.g. "Button". */
+  /** Page display name, e.g. "Button", "Typography". */
   title: string;
-  /** Path to the component's source file, relative to the repo root. */
-  componentPath: string;
+  /**
+   * Path to the source file this page documents, relative to the repo
+   * root — the "Source" link is omitted when a page has no single file
+   * that represents it (e.g. Introduction).
+   */
+  componentPath?: string;
   /**
    * Full-width slot directly under the title, above the tabs — reserved
    * for a future Alerts component (deprecation/experimental notices,
@@ -31,7 +35,7 @@ interface ComponentDocsHeaderProps {
 }
 
 export function ComponentDocsHeader({ title, componentPath, alerts }: ComponentDocsHeaderProps) {
-  const sourceHref = `${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${componentPath}`;
+  const sourceHref = componentPath ? `${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${componentPath}` : undefined;
   const issueHref = `${GITHUB_REPO}/issues/new`;
 
   return (
@@ -51,9 +55,11 @@ export function ComponentDocsHeader({ title, componentPath, alerts }: ComponentD
           <a href={issueHref} target="_blank" rel="noreferrer" style={{ color: '#24709D' }}>
             Report an issue
           </a>
-          <a href={sourceHref} target="_blank" rel="noreferrer" style={{ color: '#24709D' }}>
-            {'</>'} Source
-          </a>
+          {sourceHref && (
+            <a href={sourceHref} target="_blank" rel="noreferrer" style={{ color: '#24709D' }}>
+              {'</>'} Source
+            </a>
+          )}
         </div>
       </div>
       {alerts && <div style={{ width: '100%', marginTop: 16 }}>{alerts}</div>}
