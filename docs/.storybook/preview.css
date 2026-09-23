@@ -51,6 +51,7 @@
   line-height: 1.6;
 }
 
-.sbdocs-content .content section {
-  margin-bottom: 56px;
+.sbdocs-content .content p,
+.sbdocs-content .content li {
+  font-size: 16px;
 }

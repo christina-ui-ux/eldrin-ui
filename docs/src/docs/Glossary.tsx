@@ -61,7 +61,7 @@ export function GlossaryOverview() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <p>
         A curated subset of naming decisions from <code>docs/glossary.yaml</code> — the full file
-        stays the lint-enforced source of truth (<code>npm run lint:glossary</code>, ADR 0002).
+        stays the lint-enforced source of truth (<code>npm run lint:glossary</code>).
         Which terms appear here is picked by hand in{' '}
         <code>docs/src/docs/glossary-storybook.yaml</code>.
       </p>

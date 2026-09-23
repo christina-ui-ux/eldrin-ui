@@ -27,8 +27,8 @@ export function ColorsOverview() {
       <section>
         <h2>Surface vs. fill</h2>
         <p>
-          Which semantic set a component draws from is fixed by its classification (see ADR
-          0001): a <strong>container</strong> component (Card, Modal — accepts child content)
+          Which semantic set a component draws from is fixed by its classification: a{' '}
+          <strong>container</strong> component (Card, Modal — accepts child content)
           uses <code>bg.surface.*</code>, paired with the base text/icon tokens (no suffix). A{' '}
           <strong>control</strong> component (Button, Badge — atomic) uses <code>bg.fill.*</code>,
           and <em>must</em> pair it with the matching <code>onFill</code> text/icon variant (e.g.{' '}

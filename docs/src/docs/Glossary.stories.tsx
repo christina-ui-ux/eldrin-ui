@@ -8,7 +8,6 @@ const meta = {
     layout: 'padded',
     pageDocs: {
       title: 'Glossary',
-      sourcePath: 'docs/glossary.yaml',
       tabs: [
         { label: 'Overview', content: <GlossaryOverview /> },
         { label: 'glossary.yaml', content: <GlossaryCode /> },

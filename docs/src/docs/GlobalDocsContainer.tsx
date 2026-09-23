@@ -27,14 +27,14 @@ import { loadComponentSpec } from './parseComponentSpec';
 //
 //   2. A documentation page (nothing to derive from a component spec —
 //      Tokens/Colors, Typography, Glossary, Introduction):
-//        parameters: { pageDocs: { title: 'Typography', sourcePath: '...', tabs: [{ label: 'Overview', content: <Node/> }, { label: 'Tokens', content: <Node/> }] } }
+//        parameters: { pageDocs: { title: 'Typography', tabs: [{ label: 'Overview', content: <Node/> }, { label: 'Tokens', content: <Node/> }] } }
 //      `tabs` is an ordered, page-chosen list — there's no fixed
 //      Overview/Code shape to conform to (a documentation page's tabs
 //      are whatever that page actually needs; ask which tabs before
-//      building a new one). `sourcePath` is optional (omitted, the
-//      header's "Source" link doesn't render — e.g. Introduction, which
-//      isn't one file). No Changelog tab is ever added here — that's a
-//      component-page-only concept (see 1 above).
+//      building a new one). A single-tab page (just Overview) renders
+//      with no tab row at all (ComponentDocsTabs). No Changelog tab is
+//      ever added here — that's a component-page-only concept (see 1
+//      above).
 
 interface ComponentDocsParameter {
   componentPath: string;
@@ -42,7 +42,6 @@ interface ComponentDocsParameter {
 
 interface PageDocsParameter {
   title: string;
-  sourcePath?: string;
   tabs: { label: string; content: ReactNode }[];
 }
 
@@ -78,9 +77,7 @@ export function GlobalDocsContainer({ context, children, ...rest }: PropsWithChi
   return (
     <DocsContainer context={context} {...rest}>
       {resolved?.kind === 'component' ? (
-        <ComponentDocsTabs
-          header={<ComponentDocsHeader title={resolved.title} componentPath={resolved.componentPath} />}
-        >
+        <ComponentDocsTabs header={<ComponentDocsHeader title={resolved.title} />}>
           <ComponentDocsTabs.Overview>
             <ComponentDocsOverview
               spec={loadComponentSpec(resolved.componentPath)}
@@ -93,9 +90,7 @@ export function GlobalDocsContainer({ context, children, ...rest }: PropsWithChi
           <ComponentDocsTabs.Changelog />
         </ComponentDocsTabs>
       ) : resolved?.kind === 'page' ? (
-        <ComponentDocsTabs
-          header={<ComponentDocsHeader title={resolved.title} componentPath={resolved.sourcePath} />}
-        >
+        <ComponentDocsTabs header={<ComponentDocsHeader title={resolved.title} />}>
           {resolved.tabs.map((tab) => (
             <ComponentDocsTabs.Panel key={tab.label} label={tab.label}>
               {tab.content}

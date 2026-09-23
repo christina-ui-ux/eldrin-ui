@@ -9,7 +9,6 @@ const meta = {
     layout: 'padded',
     pageDocs: {
       title: 'Typography',
-      sourcePath: 'packages/eldrin-ui/tokens-source/semantic.json',
       tabs: [
         { label: 'Overview', content: <TypographyOverview /> },
         { label: 'Tokens', content: <TypographyTokens /> },

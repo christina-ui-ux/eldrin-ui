@@ -29,7 +29,13 @@ const preview: Preview = {
     // here falls back to alphabetical, after the listed groups.
     options: {
       storySort: {
-        order: ['Docs Overview', 'Foundation', 'Actions'],
+        order: [
+          'Docs Overview',
+          ['Introduction', 'Glossary'],
+          'Foundation',
+          ['Tokens', 'Colors', 'Typography'],
+          'Actions',
+        ],
       },
     },
   },

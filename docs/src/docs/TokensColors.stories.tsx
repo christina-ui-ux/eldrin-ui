@@ -9,7 +9,6 @@ const meta = {
     layout: 'padded',
     pageDocs: {
       title: 'Colors',
-      sourcePath: 'packages/eldrin-ui/tokens-source/semantic.json',
       tabs: [
         { label: 'Overview', content: <ColorsOverview /> },
         { label: 'Tokens', content: <ColorsTokens /> },

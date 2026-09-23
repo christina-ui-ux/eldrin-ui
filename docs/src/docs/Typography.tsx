@@ -155,7 +155,7 @@ export function TypographyOverview() {
           only type set right now — <code>type.ui.heading-1</code>, <code>.ui-heading-1</code>,
           never a bare <code>heading-1</code>. An <code>editorial</code> set (larger, more
           generously spaced, for content-led pages) was designed and deferred; keeping the
-          qualifier means adding it back is additive, not a rename (see ADR 0016).
+          qualifier means adding it back is additive, not a rename.
         </p>
         <p>
           Text <em>color</em> is a separate concern, governed by the <code>text.*</code> color
@@ -172,7 +172,7 @@ export function TypographyOverview() {
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {ROLES.map((role) => (
-            <div key={role} style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 16 }}>
+            <div key={role}>
               <div style={{ fontFamily: 'monospace', fontWeight: 600, marginBottom: 4 }}>type.ui.{role}</div>
               <div>{ROLE_GUIDANCE[role].use}</div>
               <div style={{ color: '#64748b' }}>Not for: {ROLE_GUIDANCE[role].notFor}</div>
@@ -200,7 +200,7 @@ export function TypographyOverview() {
         <h2>Scale</h2>
         <p>
           <code>size</code> scales automatically with the systemwide <code>medium</code>/
-          <code>large</code> scale axis (ADR 0007) — roughly ×1.25 from medium to large, the same
+          <code>large</code> scale axis — roughly ×1.25 from medium to large, the same
           as spacing. <code>line-height</code> and <code>letter-spacing</code> do not scale on
           their own: <code>line-height</code> is already a unitless ratio of <code>size</code>,
           and <code>letter-spacing</code> is authored in <code>em</code>, so both stay correct as

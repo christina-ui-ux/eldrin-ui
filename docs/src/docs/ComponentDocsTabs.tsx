@@ -51,33 +51,35 @@ function ComponentDocsTabsImpl({ header, children }: { header?: ReactNode; child
           with the tablist, so the tab row sits directly under the title. */}
       <div className="header">
         {header}
-        <div role="tablist" className="tablist">
-          {panels.map((panel, i) => {
-            const label = panel.props.label ?? (panel.type as { tabLabel?: string }).tabLabel ?? `Tab ${i + 1}`;
-            const isActive = active === i;
-            return (
-              <button
-                key={label}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActive(i)}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid #24709D' : '2px solid transparent',
-                  backgroundColor: 'transparent',
-                  fontSize: 14,
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? '#161B3E' : '#594C5B',
-                  cursor: 'pointer',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+        {panels.length > 1 && (
+          <div role="tablist" className="tablist">
+            {panels.map((panel, i) => {
+              const label = panel.props.label ?? (panel.type as { tabLabel?: string }).tabLabel ?? `Tab ${i + 1}`;
+              const isActive = active === i;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActive(i)}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderBottom: isActive ? '2px solid #24709D' : '2px solid transparent',
+                    backgroundColor: 'transparent',
+                    fontSize: 14,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? '#161B3E' : '#594C5B',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="content">
         {panels.map((panel, i) => (
